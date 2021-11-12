@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"github.com/gorilla/mux"
-	"github.com/joho/godotenv"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
 	"github.com/uptrace/bun/driver/pgdriver"
@@ -41,13 +40,15 @@ type User struct {
 	Surname       string `bun:"surname" json:"surname"`
 }
 
+//MYSQL_ROOT_PASSWORD: root
+//MYSQL_DATABASE: itcode
+//MYSQL_USER: itcode2021
+//MYSQL_PASSWORD: itcode2021
+
 func main() {
 	db = newDB()
-	var router *mux.Router = newRouter()
-	if err := godotenv.Load(); err != nil {
-		panic(err.Error())
-	}
-	log.Fatal(http.ListenAndServe(":3000", router))
+	var router = newRouter()
+	log.Fatal(http.ListenAndServe(":8080", router))
 }
 
 func GetUser(w http.ResponseWriter, r *http.Request) {
