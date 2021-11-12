@@ -3,4 +3,4 @@
 	url = https://gitlab.itcode2021.ru/backend/checker
 [submodule "database"]
 	path = database
-	url = https://gitlab.itcode2021.ru/backend/database
+	url = https://gitlab.itcode2021.ru/kornachuk_mark/database
