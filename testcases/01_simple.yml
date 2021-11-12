@@ -1,0 +1,144 @@
+- title: 1 товар
+  intro:
+    items:
+      - item_id: 3
+    promocode: ""
+  test:
+    items:
+      - item_id: 3
+        price: 500
+    cart_sum: 500
+- title: 2 разных товара
+  intro:
+    items:
+      - item_id: 3
+      - item_id: 4
+    promocode: ""
+  test:
+    items:
+      - item_id: 3
+        price: 500
+      - item_id: 4
+        price: 550
+    cart_sum: 1050
+- title: 3 товара 2 из которых одинаковые
+  intro:
+    items:
+      - item_id: 3
+      - item_id: 4
+      - item_id: 4
+    promocode: ""
+  test:
+    items:
+      - item_id: 3
+        price: 500
+      - item_id: 4
+        price: 550
+      - item_id: 4
+        price: 550
+    cart_sum: 1600
+
+- title: Скидка 10% за заказ по промокоду 1 пеперони
+  intro:
+    items:
+      - item_id: 1
+    promocode: "10percent"
+  test:
+    items:
+      - item_id: 1
+        price: 500
+    promos:
+      - promo_id: 1
+    cart_sum: 450
+    discount: 50
+    promocode: "10percent"
+
+- title: Скидка 10% за заказ по промокоду 2 пеперони
+  intro:
+    items:
+      - item_id: 1
+      - item_id: 1
+    promocode: "10percent"
+  test:
+    items:
+      - item_id: 1
+        price: 500
+      - item_id: 1
+        price: 500
+    promos:
+      - promo_id: 1
+    cart_sum: 900
+    discount: 100
+    promocode: "10percent"
+
+- title: Скидка 1000 за заказ по промокоду
+  intro:
+    items:
+      - item_id: 3
+    promocode: discount1000
+  test:
+    items:
+      - item_id: 3
+        price: 500
+    promos:
+      - promo_id: 3
+    cart_sum: 0
+    discount: 500
+    promocode: discount1000
+
+- title: Подарок 1 пеперони за заказ с промокодом
+  intro:
+    items:
+      - item_id: 1
+    promocode: 1peperoni
+  test:
+    items:
+      - item_id: 1
+        price: 500
+      - item_id: 1
+    promos:
+      - promo_id: 4
+    cart_sum: 500
+    promocode: 1peperoni
+
+- title: Подарок 2 пеперони за заказ с промокодом
+  intro:
+    items:
+      - item_id: 1
+    promocode: 2peperoni
+  test:
+    items:
+      - item_id: 1
+        price: 500
+      - item_id: 1
+      - item_id: 1
+    promos:
+      - promo_id: 5
+    cart_sum: 500
+    promocode: 2peperoni
+
+- title: В подарок ничего по промокоду
+  intro:
+    items:
+      - item_id: 1
+    promocode: nogift
+  test:
+    items:
+      - item_id: 1
+        price: 500
+    promos:
+      - promo_id: 6
+    cart_sum: 500
+    promocode: nogift
+
+- title: В подарок ничего за Наггетсы
+  intro:
+    items:
+      - item_id: 22
+  test:
+    items:
+      - item_id: 22
+        price: 280
+    promos:
+      - promo_id: 7
+    cart_sum: 280
