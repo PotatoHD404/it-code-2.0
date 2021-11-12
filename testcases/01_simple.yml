@@ -143,6 +143,12 @@
       - promo_id: 7
     cart_sum: 280
 
+
+
+
+
+
+
 - title: 1 товар
   intro:
     items:
@@ -187,23 +193,31 @@
   intro:
     items:
       - item_id: 3
-    promocode: ""
+    promocode: discount1000
   test:
     items:
       - item_id: 3
         price: 500
-    cart_sum: 500
+    promos:
+      - promo_id: 3
+    cart_sum: 0
+    discount: 500
+    promocode: discount1000
 
 - title: Тест percent_discount order
   intro:
     items:
-      - item_id: 3
-    promocode: ""
+      - item_id: 1
+    promocode: "10percent"
   test:
     items:
-      - item_id: 3
+      - item_id: 1
         price: 500
-    cart_sum: 500
+    promos:
+      - promo_id: 1
+    cart_sum: 450
+    discount: 50
+    promocode: "10percent"
 
 - title: Тест gift order
   intro:

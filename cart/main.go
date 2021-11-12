@@ -4,10 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
 	"github.com/uptrace/bun"
-	"github.com/uptrace/bun/dialect/pgdialect"
-	"github.com/uptrace/bun/driver/pgdriver"
+	"github.com/uptrace/bun/dialect/mysqldialect"
 	"log"
 	"net/http"
 )
@@ -25,9 +25,13 @@ func newRouter() *mux.Router {
 }
 
 func newDB() *bun.DB {
-	dsn := "mysql://itcode2021:itcode2021@(mysql:3306)/itcode"
-	sqldb := sql.OpenDB(pgdriver.NewConnector(pgdriver.WithDSN(dsn)))
-	db := bun.NewDB(sqldb, pgdialect.New())
+	dsn := "itcode2021:itcode2021@/itcode"
+	sqldb, err := sql.Open("mysql", dsn)
+	if err != nil {
+		panic(err)
+	}
+	//sqldb := sql.OpenDB(pgdriver.NewConnector(pgdriver.WithDSN(dsn)))
+	db := bun.NewDB(sqldb, mysqldialect.New())
 	return db
 }
 
