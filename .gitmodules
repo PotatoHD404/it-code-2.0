@@ -1,0 +1,6 @@
+[submodule "checker"]
+	path = checker
+	url = https://gitlab.itcode2021.ru/backend/checker
+[submodule "database"]
+	path = database
+	url = https://gitlab.itcode2021.ru/backend/database

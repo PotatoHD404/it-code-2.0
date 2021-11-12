@@ -1,0 +1,40 @@
+version: "3.1"
+
+services:
+  mysql:
+    build: ./database/
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: itcode
+      MYSQL_USER: itcode2021
+      MYSQL_PASSWORD: itcode2021
+    healthcheck:
+      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost", "-proot" ]
+      timeout: 2s
+      retries: 30
+  migrate:
+    image: migrate/migrate:v4.15.1
+    command: [ "-path=/migrations", "-database", "mysql://itcode2021:itcode2021@(mysql:3306)/itcode", "up" ]
+    volumes:
+      - ./migrations:/migrations
+    depends_on:
+      mysql:
+        condition: service_healthy
+  cart:
+    build: .
+    restart: always
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PORT: "3306"
+      MYSQL_DB: itcode
+      MYSQL_USER: itcode2021
+      MYSQL_PASSWORD: itcode2021
+    depends_on:
+      - migrate
+  checker:
+    build: ./checker/
+    volumes:
+      - ./testcases:/testcases
+    command: [ "/apps/check", "-f", "/testcases/01_simple.yml", "-u", "http://cart:8080", "-t", "1" ]
+    depends_on:
+      - cart
