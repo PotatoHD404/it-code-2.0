@@ -1,0 +1,45 @@
+stages:
+  - build
+  - tests
+  - submit
+
+build_go_app:
+  image: golang:alpine3.14
+  stage: build
+  script:
+    - cd cart; go build -o cart
+  artifacts:
+    expire_in: 5 sec
+    public: false
+    paths:
+      - ./cart/cart
+
+test_application:
+  image: gitlab.itcode2021.ru:5050/backend/checker:latest
+  stage: tests
+  allow_failure: true
+  variables:
+    MYSQL_RANDOM_ROOT_PASSWORD: 1
+    MYSQL_DATABASE: itcode
+    MYSQL_HOST: mysql
+    MYSQL_PORT: 3306
+    MYSQL_DB: itcode
+    MYSQL_USER: itcode2021
+    MYSQL_PASSWORD: itcode2021
+  services:
+    - name: gitlab.itcode2021.ru:5050/backend/database:latest
+      alias: mysql
+  dependencies: 
+    - build_go_app
+  script:
+    - chmod +x ./cart/cart && ./cart/cart &
+    - /apps/migrate -path=./migrations -database "mysql://itcode2021:itcode2021@(mysql:3306)/itcode" up
+    - /apps/check -f testcases/01_simple.yml -u http://0.0.0.0:8080 -t 1 > result.json
+    - chmod +x ./test.sh && ./test.sh result.json
+
+submit:
+  stage: submit
+  image: gitlab.itcode2021.ru:5050/backend/curl:submit
+  when: manual
+  script:
+    - /submit.sh
