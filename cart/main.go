@@ -10,7 +10,6 @@ import (
 	"github.com/uptrace/bun/driver/pgdriver"
 	"log"
 	"net/http"
-	"os"
 )
 
 var db *bun.DB
@@ -26,7 +25,7 @@ func newRouter() *mux.Router {
 }
 
 func newDB() *bun.DB {
-	dsn := os.Getenv("POSTGRESQL")
+	dsn := "mysql://itcode2021:itcode2021@(mysql:3306)/itcode"
 	sqldb := sql.OpenDB(pgdriver.NewConnector(pgdriver.WithDSN(dsn)))
 	db := bun.NewDB(sqldb, pgdialect.New())
 	return db
