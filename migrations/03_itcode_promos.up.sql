@@ -19,7 +19,7 @@ INSERT INTO itcode.promos (id, min_order_sum, promocode, priority, action, disco
 VALUES (9, 1000.00, 'pepsi', 9, 'gift', null, 'Пепси 1л в подарок при сумме заказа от 1000р по промокоду pepsi',
         'order');
 INSERT INTO itcode.promos (id, min_order_sum, promocode, priority, action, discount, title, scope)
-VALUES (10, null, 'pepsi10', 10, 'percent_discount', null, '
-Пепси 1л со скидкой 10% при покупке Пепси 1л и двух пицц Пепперони по промокоду pepsi10', 'item');
+VALUES (10, null, 'pepsi10', 10, 'percent_discount', null,
+        'Пепси 1л со скидкой 10% при покупке Пепси 1л и двух пицц Пепперони по промокоду pepsi10', 'item');
 INSERT INTO itcode.promos (id, min_order_sum, promocode, priority, action, discount, title, scope)
 VALUES (99, 400.00, 'test', 99, 'gift', 30.00, 'Сложная скидка', 'item');
