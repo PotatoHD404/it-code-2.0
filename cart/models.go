@@ -8,8 +8,7 @@ import (
 type float float32
 
 func (n float) MarshalJSON() ([]byte, error) {
-	// There are probably better ways to do it. It is just an example
-	return []byte(fmt.Sprintf("%.2f", n)), nil
+	return []byte(fmt.Sprintf("%.0f", n)), nil
 }
 
 type Item struct {
@@ -73,7 +72,7 @@ type PromoItemSelector struct {
 type Cart struct {
 	bun.BaseModel `bun:"orders"`
 	ID            uint32      `bun:"id,pk" json:"-"`
-	CartID        string      `bun:"cart_id" json:"cart_id"`
+	CartID        string      `bun:"cart_id" json:"-"`
 	Items         []*CartItem `bun:"rel:has-many,join:id=cart_id" json:"items"`
 	Promos        []*Promo    `bun:"m2m:cart_promos,join:Cart=Promo" json:"promos"`
 	Promocode     string      `bun:"promocode" json:"promocode"`
@@ -83,8 +82,8 @@ type Cart struct {
 
 type CartItem struct {
 	bun.BaseModel `bun:"cart_items"`
-	ID            string `bun:"id,pk" json:"-"`
-	CartItemID    string `bun:"-" json:"cart_item_id"`
+	ID            int    `bun:"id,pk" json:"-"`
+	CartItemID    string `bun:"cart_item_id" json:"cart_item_id"`
 	ItemID        uint32 `bun:"item_id" json:"item_id"`
 	Title         string `bun:"-" json:"title"`
 	Price         *float `bun:"price" json:"price"`
@@ -93,6 +92,8 @@ type CartItem struct {
 	Cart          *Cart  `bun:"rel:belongs-to,join:cart_id=id" json:"-"`
 	Item          *Item  `bun:"rel:belongs-to,join:item_id=id" json:"-"`
 	Discount      float  `bun:"-" json:"discount"`
+	Selected      bool   `bun:"-" json:"-"`
+	Used          bool   `bun:"-" json:"-"`
 }
 
 type CartPromo struct {

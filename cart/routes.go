@@ -30,16 +30,21 @@ func AddItemToCart(w http.ResponseWriter, r *http.Request) {
 	var item = GetItemFromDB(r.FormValue("item_id"))
 	var cart = GetCartFromDB(mux.Vars(r)["cart_id"])
 	//cart.Items = append(cart.Items, GetItemFromDB(itemId)
-
+	//Order("order.id ASC").
+	id, _ := shortid.Generate()
+	cardItem := &CartItem{
+		CartItemID: id,
+		ItemID:     item.ID,
+		CartID:     cart.ID,
+		Price:      &item.Price,
+		OrigPrice:  item.Price,
+	}
+	cart.Items = append(cart.Items, cardItem)
+	cart.ResetCart()
+	cart.ApplyPromo(w)
 	_, err := db.
 		NewInsert().
-		Model(
-			&CartItem{
-				ItemID:    item.ID,
-				CartID:    cart.ID,
-				Price:     &item.Price,
-				OrigPrice: item.Price,
-			}).
+		Model(cardItem).
 		Exec(ctx)
 	if err != nil {
 		w.WriteHeader(http.StatusCreated)

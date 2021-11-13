@@ -10,3 +10,5 @@ INSERT INTO itcode.promo_item_selector (id, item_id, promo_id)
 VALUES (5, 47, 8);
 INSERT INTO itcode.promo_item_selector (id, item_id, promo_id)
 VALUES (6, 47, 10);
+INSERT INTO itcode.promo_item_selector (id, item_id, promo_id)
+VALUES (7, 22, 7);
