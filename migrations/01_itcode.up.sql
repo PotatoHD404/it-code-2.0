@@ -1,3 +1,15 @@
+drop table items
+
+drop table promos
+
+drop table promo_condition_item
+
+drop table promo_exclusions
+
+drop table promo_gift_items
+
+drop table promo_item_selector
+
 create table items
 (
     id    int unsigned auto_increment
@@ -85,7 +97,7 @@ create table cart_items
     cart_id      int unsigned not null,
     orig_price   float        not null,
     cart_item_id varchar(30)  not null,
-    
+
     constraint cart_items_items_id_fk
         foreign key (item_id) references items (id)
             on update cascade on delete cascade,
