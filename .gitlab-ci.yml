@@ -29,11 +29,12 @@ test_application:
   services:
     - name: gitlab.itcode2021.ru:5050/backend/database:latest
       alias: mysql
-  dependencies: 
+  dependencies:
     - build_go_app
   script:
-    - chmod +x ./cart/cart && ./cart/cart &
-    - /apps/migrate -path=./migrations -database "mysql://itcode2021:itcode2021@(mysql:3306)/itcode" up
+    - chmod +x ./cart/cart &&
+    #    - ./cart/cart & /apps/migrate -path=./migrations -database "mysql://itcode2021:itcode2021@(mysql:3306)/itcode" down 1
+    - ./cart/cart & /apps/migrate -path=./migrations -database "mysql://itcode2021:itcode2021@(mysql:3306)/itcode" down 1 up
     - /apps/check -f testcases/01_simple.yml -u http://0.0.0.0:8080 -t 1 > result.json
     - chmod +x ./test.sh && ./test.sh result.json
 
