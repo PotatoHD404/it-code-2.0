@@ -29,90 +29,65 @@ func newDB() *bun.DB {
 	}
 	//sqldb := sql.OpenDB(pgdriver.NewConnector(pgdriver.WithDSN(dsn)))
 	db := bun.NewDB(sqldb, mysqldialect.New())
-	db.RegisterModel((*PromoConditionItem)(nil), (*PromoExclusions)(nil), (*PromoGiftItem)(nil), (*PromoItemSelector)(nil), (*CartItem)(nil), (*CartPromo)(nil), (*Promo)(nil), (*Item)(nil))
+
 	return db
 }
 
 type Item struct {
 	bun.BaseModel `bun:"items"`
-	ID            uint64  `json:"id"`
+	ID            uint32  `json:"id"`
 	Title         string  `bun:"title" json:"title"`
-	Price         float64 `bun:"price" json:"price"`
-}
-
-var ActionType = [...]string{
-	"percent_discount",
-	"price_discount",
-	"gift",
-}
-
-var ScopeType = [...]string{
-	"order",
-	"item",
+	Price         float32 `bun:"price" json:"price"`
 }
 
 type Promo struct {
 	bun.BaseModel  `bun:"promos"`
-	ID             uint64  `json:"id"`
+	ID             uint32  `json:"id"`
 	Promocode      string  `bun:"promocode" json:"promocode"`
-	Priority       uint64  `bun:"priority" json:"priority"`
-	Action         string  `bun:"action" json:"-"`
-	Discount       float64 `bun:"discount" json:"discount"`
+	Priority       uint32  `bun:"priority" json:"priority"`
+	Action         string  `bun:"action" json:"action"`
+	Discount       float32 `bun:"discount" json:"discount"`
 	Title          string  `bun:"title" json:"title"`
-	Scope          string  `bun:"scope" json:"-"`
-	ConditionItems []Item `bun:"m2m:promo_condition_item" json:"condition_items"`
-	//SelectorItems  []Item  `bun:"m2m:promo_item_selector,join:Promo=Item" json:"selector_items"`
-	//GiftItems      []Item  `bun:"m2m:promo_gift_items,join:Promo=Item" json:"gift_items"`
-	//Exclusions     []Promo `bun:"m2m:promo_exclusions,join:Promo=ExPromo" json:"exclusions"`
+	Scope          string  `bun:"scope" json:"scope"`
+	ConditionItems []Item  `bun:"m2m:promo_condition_item,join:Promo=Item" json:"condition_items"`
+	SelectorItems  []Item  `bun:"m2m:promo_item_selector,join:Promo=Item" json:"selector_items"`
+	GiftItems      []Item  `bun:"m2m:promo_gift_items,join:Promo=Item" json:"gift_items"`
+	Exclusions     []Promo `bun:"m2m:promo_exclusions,join:Promo=ExPromo" json:"exclusions"`
 }
 
 type PromoConditionItem struct {
 	bun.BaseModel `bun:"promo_condition_item"`
-	ID            uint64
-	//PromoID       uint64 `bun:"promo_id" json:"promo_id"`
-	Promo         *Promo `bun:"promo_id,rel:belongs-to" json:"promo"`
-	//ItemID        uint64 `bun:"item_id" json:"item_id"`
-	Item          *Item  `bun:"item_id,rel:belongs-to" json:"item"`
+	ID            uint32 `bun:"id,pk"`
+	PromoID       uint32 `bun:"promo_id" json:"promo_id"`
+	Promo         *Promo `bun:"rel:belongs-to,join:promo_id=id" json:"promo"`
+	ItemID        uint32 `bun:"item_id" json:"item_id"`
+	Item          *Item  `bun:"rel:belongs-to,join:item_id=id" json:"item"`
 }
 
 type PromoExclusions struct {
 	bun.BaseModel `bun:"promo_exclusions"`
-	ID            uint64 `json:"id"`
+	ID            uint32 `json:"id"`
 	Promo         *Promo `bun:"promo_id,rel:belongs-to,join:promo_id=id" json:"promo"`
 	ExPromo       *Promo `bun:"exclusion_promo_id,rel:belongs-to,join:exclusion_promo_id=id" json:"ex_promo"`
 }
 
 type PromoGiftItem struct {
 	bun.BaseModel `bun:"promo_gift_items"`
-	ID            uint64 `json:"id"`
+	ID            uint32 `json:"id"`
 	Promo         *Promo `bun:"promo_id,rel:belongs-to,join:promo_id=id" json:"promo"`
 	Item          *Item  `bun:"item_id,rel:belongs-to,join:item_id=id" json:"item"`
 }
 
 type PromoItemSelector struct {
 	bun.BaseModel `bun:"promo_item_selector"`
-	//ID            uint64 `json:"id"`
+	//ID            uint32 `json:"id"`
 	Promo *Promo `bun:"promo_id,rel:belongs-to,join:promo_id=id" json:"promo"`
 	Item  *Item  `bun:"item_id,rel:belongs-to,join:item_id=id" json:"item"`
 }
 
-//type Profile struct {
-//	ID     int64 `bun:",pk"`
-//	Lang   string
-//	Active bool
-//	UserID int64
-//}
-//
-//// User has many profiles.
-//type User struct {
-//	ID       int64 `bun:",pk"`
-//	Name     string
-//	Profiles []*Profile `bun:"rel:has-many,join:id=user_id"`
-//}
-
 type Cart struct {
 	bun.BaseModel `bun:"orders"`
-	ID            uint64 `json:"id"`
+	ID            uint32 `json:"id"`
 	CartId        string `bun:"cart_id" json:"cart_id"`
 	Items         []Item `bun:"m2m:cart_items,join:Cart=Item" json:"items"`
 	Promos        []Item `bun:"m2m:cart_promos,join:Cart=Promo" json:"promos"`
@@ -121,7 +96,7 @@ type Cart struct {
 
 type CartItem struct {
 	bun.BaseModel `bun:"cart_items"`
-	ID            uint64          `json:"id"`
+	ID            uint32          `json:"id"`
 	Price         sql.NullFloat64 `bun:"price" json:"price"`
 	Cart          *Cart           `bun:"cart_id,rel:belongs-to,join:cart_id=id" json:"cart"`
 	Item          *Item           `bun:"item_id,rel:belongs-to,join:item_id=id" json:"item"`
@@ -129,48 +104,159 @@ type CartItem struct {
 
 type CartPromo struct {
 	bun.BaseModel `bun:"cart_promos"`
-	ID            uint64          `json:"id"`
+	ID            uint32          `json:"id"`
 	Price         sql.NullFloat64 `bun:"price" json:"price"`
 	Cart          *Cart           `bun:"cart_id,rel:belongs-to,join:cart_id=id" json:"cart"`
 	Promo         *Promo          `bun:"promo_id,rel:belongs-to,join:promo_id=id" json:"item"`
 }
 
 func main() {
-	var db = newDB()
-	err := db.Close()
-	if err != nil {
-		panic(err)
-	}
-	var router = newRouter()
-	log.Fatal(http.ListenAndServe(":8080", router))
-}
-
-func CreateCart(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	ctx := context.Background()
-	//var promo []Promo
-	var test []PromoConditionItem
-	var db = newDB()
+	//var db = newDB()
 	//defer func(db *bun.DB) {
 	//	err := db.Close()
 	//	if err != nil {
 	//		panic(err)
 	//	}
 	//}(db)
-	//params := mux.Vars(r)
-	////params["id"]
-	if err := db.
-		NewSelect().
-		Model(&test).
-		Relation("Promo").
-		Relation("Item").
+	//db.RegisterModel((*PromoConditionItem)(nil))
+	//ctx := context.Background()
+	//err := createSchema(ctx, db)
+	//if err != nil {
+	//	panic(err)
+	//}
+	var router = newRouter()
+	log.Fatal(http.ListenAndServe(":8080", router))
+}
+
+func CreateCart(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var promos []Promo
+	ctx := context.Background()
+	var db = newDB()
+	db.RegisterModel(
+		(*Item)(nil),
+		(*Promo)(nil),
+		(*PromoConditionItem)(nil),
+		(*PromoExclusions)(nil),
+		(*PromoGiftItem)(nil),
+		(*PromoItemSelector)(nil),
+		(*Cart)(nil),
+		(*CartItem)(nil),
+		(*CartPromo)(nil))
+	defer func(db *bun.DB) {
+		err := db.Close()
+		if err != nil {
+			panic(err)
+		}
+	}(db)
+	if err := db.NewSelect().
+		Model(&promos).
+		Relation("ConditionItems").
+		Relation("SelectorItems").
+		Relation("GiftItems").
+		Relation("Exclusions").
 		Scan(ctx); err != nil {
 		panic(err)
 	}
-	if err := json.NewEncoder(w).Encode(test); err != nil {
+	if err := json.NewEncoder(w).Encode(promos); err != nil {
 		panic(err)
 	}
+
+	//ctx := context.Background()
+	//var promos []Promo
+	////var test []PromoConditionItem
+	//var db = newDB()
+	////models := []interface{}{
+	////	//(*Item)(nil),
+	////	//(*Promo)(nil),
+	////	(*PromoConditionItem)(nil),
+	////}
+	////for _, model := range models {
+	////	if _, err := db.NewCreateTable().Model(model).Exec(ctx); err != nil {
+	////		panic(err)
+	////	}
+	////}
+	////defer func(db *bun.DB) {
+	////	err := db.Close()
+	////	if err != nil {
+	////		panic(err)
+	////	}
+	////}(db)
+	////params := mux.Vars(r)
+	//////params["id"]
+	//
+	//if err := db.
+	//	NewSelect().
+	//	Model(&promos).
+	//	Relation("ConditionItems").
+	//	//Where("id = 8").
+	//	//Relation("Promo").
+	//	//Relation("Item").
+	//	//Relation("ConditionItems").
+	//	Scan(ctx); err != nil {
+	//	//panic(err)
+	//}
+	//if err := json.NewEncoder(w).Encode(promos); err != nil {
+	//	panic(err)
+	//}
 }
+
+//type Promo struct {
+//	bun.BaseModel  `bun:"promos"`
+//	ID             uint32  `json:"id"`
+//	Promocode      string  `bun:"promocode" json:"promocode"`
+//	Priority       uint32  `bun:"priority" json:"priority"`
+//	Action         string  `bun:"action" json:"action"`
+//	Discount       float32 `bun:"discount" json:"discount"`
+//	Title          string  `bun:"title" json:"title"`
+//	Scope          string  `bun:"scope" json:"scope"`
+//	ConditionItems []Item  `bun:"m2m:promo_condition_item,join:Promo=Item" json:"condition_items"`
+//	//SelectorItems  []Item  `bun:"m2m:promo_item_selector,join:Promo=Item" json:"selector_items"`
+//	//GiftItems      []Item  `bun:"m2m:promo_gift_items,join:Promo=Item" json:"gift_items"`
+//	//Exclusions     []Promo `bun:"m2m:promo_exclusions,join:Promo=ExPromo" json:"exclusions"`
+//}
+//
+//type Item struct {
+//	bun.BaseModel `bun:"items"`
+//	ID            uint32  `json:"id"`
+//	Title         string  `bun:"title" json:"title"`
+//	Price         float32 `bun:"price" json:"price"`
+//}
+//
+//type PromoConditionItem struct {
+//	bun.BaseModel `bun:"promo_condition_item"`
+//	ID uint32 `bun:",pk"`
+//	PromoID uint32
+//	Promo   *Promo `bun:"rel:belongs-to,join:promo_id=id"`
+//	ItemID  uint32
+//	Item    *Item  `bun:"rel:belongs-to,join:item_id=id"`
+//}
+
+//func createSchema(ctx context.Context, db *bun.DB) error {
+//	models := []interface{}{
+//		(*Promo)(nil),
+//		(*Item)(nil),
+//		(*PromoConditionItem)(nil),
+//	}
+//	for _, model := range models {
+//		if _, err := db.NewCreateTable().Model(model).Exec(ctx); err != nil {
+//			return err
+//		}
+//	}
+//
+//	values := []interface{}{
+//		&Item{ID: 1, Title: "sas"},
+//		&Promo{ID: 1},
+//		&PromoConditionItem{ID: 1, PromoID: 1, ItemID: 1},
+//	}
+//	for _, value := range values {
+//		if _, err := db.NewInsert().Model(value).Exec(ctx); err != nil {
+//			return err
+//		}
+//	}
+//
+//	return nil
+//}
 
 func AddItemToCart(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
