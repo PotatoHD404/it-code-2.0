@@ -7,6 +7,7 @@ import (
 	"github.com/teris-io/shortid"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/mysqldialect"
+	"net/http"
 	"strconv"
 )
 
@@ -72,7 +73,7 @@ func (m *CartItem) applyPromo(promo *Promo) {
 	promo.Applied = true
 }
 func (cart *Cart) ApplyPromo(promo *Promo) {
-	prevPrice := cart.Discount
+	prevPrice := cart.Sum
 	if promo.Action == "percent_discount" {
 		cart.Sum -= cart.Sum * promo.Discount / 100.0
 	} else if promo.Action == "price_discount" {
@@ -106,7 +107,7 @@ func (cart *Cart) ApplyPromo(promo *Promo) {
 	cart.Discount = prevPrice - cart.Sum
 	promo.Applied = true
 }
-func (cart *Cart) ApplyPromocode() {
+func (cart *Cart) ApplyPromocode(w http.ResponseWriter) {
 	var promocodes []Promo
 	err := db.NewSelect().
 		Model(&promocodes).
@@ -118,43 +119,48 @@ func (cart *Cart) ApplyPromocode() {
 		WhereOr("promocode = ?", cart.Promocode).
 		Order("id ASC").
 		Scan(ctx)
+	//err = json.NewEncoder(w).Encode(promocodes)
+	//if err != nil {
+	//	panic(err)
+	//}
 	var tempItems []*Item
 	for i := 0; i < len(promocodes); i++ {
 		promo := promocodes[i]
 		copy(promo.ConditionItems, tempItems)
 		if promo.Scope == "order" {
 			cart.ApplyPromo(&promo)
-		}
-		for _, item := range cart.Items {
-			if !item.Selected {
-				if num := ArrContainsItem(promo.ConditionItems, item); num != -1 {
-					item.Selected = true
-					promo.ConditionItems = append(promo.ConditionItems[:num], promo.ConditionItems[num+1:]...)
+		} else {
+			for _, item := range cart.Items {
+				if !item.Selected {
+					if num := ArrContainsItem(promo.ConditionItems, item); num != -1 {
+						item.Selected = true
+						promo.ConditionItems = append(promo.ConditionItems[:num], promo.ConditionItems[num+1:]...)
+					}
 				}
-			}
-			if len(promo.ConditionItems) == 0 {
-				copy(tempItems, promo.ConditionItems)
-				copy(promo.SelectorItems, tempItems)
-				for _, item = range cart.Items {
-					if !item.Used {
-						if num := ArrContainsItem(promo.SelectorItems, item); num != -1 {
-							item.applyPromo(&promo)
-							promo.SelectorItems = append(promo.SelectorItems[:num], promo.SelectorItems[num+1:]...)
+				if len(promo.ConditionItems) == 0 {
+					copy(tempItems, promo.ConditionItems)
+					copy(promo.SelectorItems, tempItems)
+					for _, item = range cart.Items {
+						if !item.Used {
+							if num := ArrContainsItem(promo.SelectorItems, item); num != -1 {
+								item.applyPromo(&promo)
+								promo.SelectorItems = append(promo.SelectorItems[:num], promo.SelectorItems[num+1:]...)
+							}
+						}
+						if len(promo.ConditionItems) == 0 {
+							break
 						}
 					}
-					if len(promo.ConditionItems) == 0 {
-						break
-					}
+					copy(tempItems, promo.SelectorItems)
 				}
-				copy(tempItems, promo.SelectorItems)
 			}
-		}
-		if promo.Applied {
-			for _, exPromo := range promo.Exclusions {
-				if num := ArrContainsPromo(promocodes, exPromo); num != -1 {
-					promocodes = append(promocodes[:num], promocodes[num+1:]...)
-					if num <= i {
-						i--
+			if promo.Applied {
+				for _, exPromo := range promo.Exclusions {
+					if num := ArrContainsPromo(promocodes, exPromo); num != -1 {
+						promocodes = append(promocodes[:num], promocodes[num+1:]...)
+						if num <= i {
+							i--
+						}
 					}
 				}
 			}
@@ -163,10 +169,6 @@ func (cart *Cart) ApplyPromocode() {
 	if err != nil {
 		panic(err)
 	}
-	//err = json.NewEncoder(w).Encode(promocodes)
-	//if err != nil {
-	//	panic(err)
-	//}
 
 	_, err = db.NewUpdate().Model(cart).WherePK().Exec(ctx)
 	if err != nil {
@@ -175,7 +177,7 @@ func (cart *Cart) ApplyPromocode() {
 }
 
 func newDB() *bun.DB {
-	dsn := "itcode2021:itcode2021@tcp(mysql:3306)/itcode"
+	dsn := "itcode2021:itcode2021@tcp(localhost:3306)/itcode"
 	sqldb, err := sql.Open("mysql", dsn)
 	if err != nil {
 		panic(err)

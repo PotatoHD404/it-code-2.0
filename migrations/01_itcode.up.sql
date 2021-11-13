@@ -1,14 +1,14 @@
-drop table promo_item_selector;
+drop table if exists promo_item_selector;
 
-drop table promo_gift_items;
+drop table if exists promo_gift_items;
 
-drop table promo_exclusions;
+drop table if exists promo_exclusions;
 
-drop table promo_condition_item;
+drop table if exists promo_condition_item;
 
-drop table items;
+drop table if exists items;
 
-drop table promos;
+drop table if exists promos;
 
 create table items
 (
