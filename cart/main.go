@@ -1,10 +1,10 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
-	_ "github.com/teris-io/shortid"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/mysqldialect"
 	"log"
@@ -14,9 +14,10 @@ import (
 func newRouter() *mux.Router {
 	r := mux.NewRouter()
 	r.HandleFunc("/", CreateCart).Methods("POST")
+	r.HandleFunc("/{cart_id}/promocode", ApplyPromoToCart).Methods("POST")
 	r.HandleFunc("/test", TestFunc).Methods("GET")
 	r.HandleFunc("/{cart_id}/items", AddItemToCart).Methods("POST")
-	r.HandleFunc("/{cart_id}/promocode", ApplyPromoToCart).Methods("POST")
+
 	r.HandleFunc("/{cart_id}", GetCart).Methods("GET")
 	return r
 }
@@ -40,12 +41,28 @@ func newDB() *bun.DB {
 }
 
 var db *bun.DB
+var ctx context.Context
+
+//var _ bun.AfterScanRowHook = (*CartItem)(nil)
+//
+//func (m *CartItem) AfterScanRow(_ context.Context) error {
+//	m.Title = m.Item.Title
+//	if m.Price != nil {
+//		m.Discount = m.OrigPrice - *m.Price
+//	} else {
+//		m.Discount = m.OrigPrice
+//	}
+//	return nil
+//}
 
 func main() {
+	ctx = context.Background()
 	var router = newRouter()
 	db = newDB()
 	log.Fatal(http.ListenAndServe(":8080", router))
 }
+
+
 
 //func GetUsers(w http.ResponseWriter, _ *http.Request) {
 //	ctx := context.Background()

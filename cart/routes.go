@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"github.com/gorilla/mux"
 	"github.com/teris-io/shortid"
@@ -11,7 +10,6 @@ import (
 func TestFunc(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var promos []Promo
-	ctx := context.Background()
 	if err := db.NewSelect().
 		Model(&promos).
 		Relation("ConditionItems").
@@ -28,31 +26,43 @@ func TestFunc(w http.ResponseWriter, _ *http.Request) {
 
 func AddItemToCart(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
+	var item = GetItemFromDB(r.FormValue("item_id"))
+	var cart = GetCartFromDB(mux.Vars(r)["cart_id"])
+	//cart.Items = append(cart.Items, GetItemFromDB(itemId)
+
+	_, err := db.
+		NewInsert().
+		Model(
+			&CartItem{
+				ItemID:    item.ID,
+				CartID:    cart.ID,
+				Price:     &item.Price,
+				OrigPrice: item.Price,
+			}).
+		Exec(ctx)
+	if err != nil {
+		w.WriteHeader(http.StatusCreated)
+		http.Error(w, err.Error(), 422)
+		//panic(err)
+	} else {
+		w.WriteHeader(http.StatusCreated)
+		if err != nil {
+			panic(err)
+		}
+	}
 }
 
 func ApplyPromoToCart(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-}
-func GetCartFromDB(cartId string) *Cart {
-	var cart = new(Cart)
-	ctx := context.Background()
-	err := db.NewSelect().
-		Model(cart).
-		Where("cart_id = ?", cartId).
-		Relation("Items").
-		Relation("Promos").
-		Scan(ctx)
-	if err != nil && err.Error() != "sql: no rows in result set" {
+	var cart = GetCartFromDB(mux.Vars(r)["cart_id"])
+	cart.Promocode = r.FormValue("promocode")
+	_, err := db.NewUpdate().Model(cart).WherePK().Exec(ctx)
+	if err != nil {
 		panic(err)
 	}
-	if cart.Items == nil {
-		cart.Items = []Item{}
-	}
-	if cart.Promos == nil {
-		cart.Promos = []Promo{}
-	}
-	return cart
 }
+
 func GetCart(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var cart = GetCartFromDB(mux.Vars(r)["cart_id"])
@@ -60,14 +70,12 @@ func GetCart(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err)
 	}
-
 }
 
 func CreateCart(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	id, _ := shortid.Generate()
 	var cart = Cart{CartID: id}
-	ctx := context.Background()
 	_, err := db.NewInsert().Model(&cart).Exec(ctx)
 	if err != nil {
 		panic(err)

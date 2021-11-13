@@ -78,11 +78,12 @@ create table orders
 
 create table cart_items
 (
-    id      int unsigned auto_increment
+    id         int unsigned auto_increment
         primary key,
-    price   float        null,
-    item_id int unsigned not null,
-    cart_id int unsigned not null,
+    price      float        null,
+    item_id    int unsigned not null,
+    cart_id    int unsigned not null,
+    orig_price float        not null,
     constraint cart_items_items_id_fk
         foreign key (item_id) references items (id)
             on update cascade on delete cascade,
@@ -90,6 +91,8 @@ create table cart_items
         foreign key (cart_id) references orders (id)
             on update cascade on delete cascade
 );
+
+
 
 create table cart_promos
 (
