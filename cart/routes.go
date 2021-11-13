@@ -39,15 +39,36 @@ func AddItemToCart(w http.ResponseWriter, r *http.Request) {
 		Price:      &item.Price,
 		OrigPrice:  item.Price,
 	}
+
 	cart.Items = append(cart.Items, cardItem)
-	cart.ResetCart()
-	cart.ApplyPromo(w)
 	_, err := db.
 		NewInsert().
 		Model(cardItem).
 		Exec(ctx)
 	if err != nil {
 		w.WriteHeader(http.StatusCreated)
+		http.Error(w, err.Error(), 422)
+		//panic(err)
+	}
+	cart.ResetCart()
+	cart.ApplyPromocode()
+	_, err = db.NewUpdate().Model(cart).WherePK().Exec(ctx)
+
+	if err != nil {
+		w.WriteHeader(http.StatusCreated)
+		http.Error(w, err.Error(), 422)
+		//panic(err)
+	}
+	//values := db.NewValues(&cart.Items)
+	//_, err = db.NewUpdate().
+	//	With("_data", values).
+	//	Model((*CartItem)(nil)).
+	//	TableExpr("_data").
+	//	Where("card_item.id = _data.id").
+	//	Exec(ctx)
+	_, err = db.NewUpdate().Model(&cart.Items).Column("price", "orig_price", "cart_item_id").Bulk().Exec(ctx)
+	if err != nil {
+		//w.WriteHeader(http.StatusCreated)
 		http.Error(w, err.Error(), 422)
 		//panic(err)
 	} else {
@@ -78,7 +99,7 @@ func GetCart(w http.ResponseWriter, r *http.Request) {
 }
 
 func CreateCart(w http.ResponseWriter, _ *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+
 	id, _ := shortid.Generate()
 	var cart = Cart{CartID: id}
 	_, err := db.NewInsert().Model(&cart).Exec(ctx)
@@ -88,8 +109,16 @@ func CreateCart(w http.ResponseWriter, _ *http.Request) {
 	type Response struct {
 		ShortID string `json:"cart_id"`
 	}
-	err = json.NewEncoder(w).Encode(Response{ShortID: id})
 	if err != nil {
-		panic(err)
+		//w.WriteHeader(http.StatusCreated)
+		http.Error(w, err.Error(), 422)
+		//panic(err)
+	} else {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		err = json.NewEncoder(w).Encode(Response{ShortID: id})
+		if err != nil {
+			panic(err)
+		}
 	}
 }

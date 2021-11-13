@@ -8,7 +8,7 @@ import (
 type float float32
 
 func (n float) MarshalJSON() ([]byte, error) {
-	return []byte(fmt.Sprintf("%.0f", n)), nil
+	return []byte(fmt.Sprintf("%.2f", n)), nil
 }
 
 type Item struct {
@@ -31,6 +31,7 @@ type Promo struct {
 	SelectorItems  []*Item  `bun:"m2m:promo_item_selector,join:Promo=Item" json:"selector_items"`
 	GiftItems      []*Item  `bun:"m2m:promo_gift_items,join:Promo=Item" json:"gift_items"`
 	Exclusions     []*Promo `bun:"m2m:promo_exclusions,join:Promo=ExPromo" json:"exclusions"`
+	Applied        bool     `bun:"-" json:"-"`
 }
 
 type PromoConditionItem struct {
