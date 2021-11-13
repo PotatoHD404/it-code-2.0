@@ -175,7 +175,7 @@ func (cart *Cart) ApplyPromocode() {
 }
 
 func newDB() *bun.DB {
-	dsn := "itcode2021:itcode2021@/itcode"
+	dsn := "itcode2021:itcode2021@tcp(mysql:3306)/itcode"
 	sqldb, err := sql.Open("mysql", dsn)
 	if err != nil {
 		panic(err)
