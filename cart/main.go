@@ -29,20 +29,26 @@ func newDB() *bun.DB {
 	}
 	//sqldb := sql.OpenDB(pgdriver.NewConnector(pgdriver.WithDSN(dsn)))
 	db := bun.NewDB(sqldb, mysqldialect.New())
-
+	db.RegisterModel(
+		(*PromoExclusions)(nil),
+		(*PromoConditionItem)(nil),
+		(*PromoGiftItem)(nil),
+		(*PromoItemSelector)(nil),
+		(*CartItem)(nil),
+		(*CartPromo)(nil))
 	return db
 }
 
 type Item struct {
 	bun.BaseModel `bun:"items"`
-	ID            uint32  `json:"id"`
+	ID            uint32  `bun:"id,pk" json:"id"`
 	Title         string  `bun:"title" json:"title"`
 	Price         float32 `bun:"price" json:"price"`
 }
 
 type Promo struct {
 	bun.BaseModel  `bun:"promos"`
-	ID             uint32  `json:"id"`
+	ID             uint32  `bun:"id,pk" json:"id"`
 	Promocode      string  `bun:"promocode" json:"promocode"`
 	Priority       uint32  `bun:"priority" json:"priority"`
 	Action         string  `bun:"action" json:"action"`
@@ -57,37 +63,43 @@ type Promo struct {
 
 type PromoConditionItem struct {
 	bun.BaseModel `bun:"promo_condition_item"`
-	ID            uint32 `bun:"id,pk"`
-	PromoID       uint32 `bun:"promo_id" json:"promo_id"`
+	ID            uint32 `bun:"id,pk" json:"-"`
+	PromoID       uint32 `bun:"promo_id" json:"-"`
 	Promo         *Promo `bun:"rel:belongs-to,join:promo_id=id" json:"promo"`
-	ItemID        uint32 `bun:"item_id" json:"item_id"`
+	ItemID        uint32 `bun:"item_id" json:"-"`
 	Item          *Item  `bun:"rel:belongs-to,join:item_id=id" json:"item"`
 }
 
 type PromoExclusions struct {
 	bun.BaseModel `bun:"promo_exclusions"`
-	ID            uint32 `json:"id"`
+	ID            uint32 `bun:"id,pk" json:"-"`
+	PromoID       uint32 `bun:"promo_id" json:"-"`
 	Promo         *Promo `bun:"promo_id,rel:belongs-to,join:promo_id=id" json:"promo"`
+	ExPromoID     uint32 `bun:"exclusion_promo_id" json:"-"`
 	ExPromo       *Promo `bun:"exclusion_promo_id,rel:belongs-to,join:exclusion_promo_id=id" json:"ex_promo"`
 }
 
 type PromoGiftItem struct {
 	bun.BaseModel `bun:"promo_gift_items"`
-	ID            uint32 `json:"id"`
+	ID            uint32 `bun:"id,pk" json:"-"`
+	PromoID       uint32 `bun:"promo_id" json:"-"`
 	Promo         *Promo `bun:"promo_id,rel:belongs-to,join:promo_id=id" json:"promo"`
+	ItemID        uint32 `bun:"item_id" json:"-"`
 	Item          *Item  `bun:"item_id,rel:belongs-to,join:item_id=id" json:"item"`
 }
 
 type PromoItemSelector struct {
 	bun.BaseModel `bun:"promo_item_selector"`
-	//ID            uint32 `json:"id"`
-	Promo *Promo `bun:"promo_id,rel:belongs-to,join:promo_id=id" json:"promo"`
-	Item  *Item  `bun:"item_id,rel:belongs-to,join:item_id=id" json:"item"`
+	ID            uint32 `bun:"id,pk" json:"-"`
+	PromoID       uint32 `bun:"promo_id" json:"-"`
+	Promo         *Promo `bun:"promo_id,rel:belongs-to,join:promo_id=id" json:"promo"`
+	ItemID        uint32 `bun:"item_id" json:"-"`
+	Item          *Item  `bun:"item_id,rel:belongs-to,join:item_id=id" json:"item"`
 }
 
 type Cart struct {
 	bun.BaseModel `bun:"orders"`
-	ID            uint32 `json:"id"`
+	ID            uint32 `bun:"id,pk" json:"-"`
 	CartId        string `bun:"cart_id" json:"cart_id"`
 	Items         []Item `bun:"m2m:cart_items,join:Cart=Item" json:"items"`
 	Promos        []Item `bun:"m2m:cart_promos,join:Cart=Promo" json:"promos"`
@@ -96,17 +108,21 @@ type Cart struct {
 
 type CartItem struct {
 	bun.BaseModel `bun:"cart_items"`
-	ID            uint32          `json:"id"`
+	ID            uint32          `bun:"id,pk" json:"-"`
 	Price         sql.NullFloat64 `bun:"price" json:"price"`
+	CartID        uint32          `bun:"cart_id" json:"-"`
 	Cart          *Cart           `bun:"cart_id,rel:belongs-to,join:cart_id=id" json:"cart"`
+	ItemID        uint32          `bun:"item_id" json:"-"`
 	Item          *Item           `bun:"item_id,rel:belongs-to,join:item_id=id" json:"item"`
 }
 
 type CartPromo struct {
 	bun.BaseModel `bun:"cart_promos"`
-	ID            uint32          `json:"id"`
+	ID            uint32          `bun:"id,pk" json:"-"`
 	Price         sql.NullFloat64 `bun:"price" json:"price"`
+	CartID        uint32          `bun:"cart_id" json:"-"`
 	Cart          *Cart           `bun:"cart_id,rel:belongs-to,join:cart_id=id" json:"cart"`
+	PromoID       uint32          `bun:"promo_id" json:"-"`
 	Promo         *Promo          `bun:"promo_id,rel:belongs-to,join:promo_id=id" json:"item"`
 }
 
@@ -133,16 +149,6 @@ func CreateCart(w http.ResponseWriter, r *http.Request) {
 	var promos []Promo
 	ctx := context.Background()
 	var db = newDB()
-	db.RegisterModel(
-		(*Item)(nil),
-		(*Promo)(nil),
-		(*PromoConditionItem)(nil),
-		(*PromoExclusions)(nil),
-		(*PromoGiftItem)(nil),
-		(*PromoItemSelector)(nil),
-		(*Cart)(nil),
-		(*CartItem)(nil),
-		(*CartPromo)(nil))
 	defer func(db *bun.DB) {
 		err := db.Close()
 		if err != nil {
@@ -152,9 +158,9 @@ func CreateCart(w http.ResponseWriter, r *http.Request) {
 	if err := db.NewSelect().
 		Model(&promos).
 		Relation("ConditionItems").
-		Relation("SelectorItems").
-		Relation("GiftItems").
-		Relation("Exclusions").
+		//Relation("SelectorItems").
+		//Relation("GiftItems").
+		//Relation("Exclusions").
 		Scan(ctx); err != nil {
 		panic(err)
 	}
