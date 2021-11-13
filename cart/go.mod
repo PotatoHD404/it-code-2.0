@@ -5,6 +5,7 @@ go 1.17
 require (
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/gorilla/mux v1.8.0
+	github.com/teris-io/shortid v0.0.0-20201117134242-e59966efd125
 	github.com/uptrace/bun v1.0.17
 	github.com/uptrace/bun/dialect/mysqldialect v1.0.17
 )
