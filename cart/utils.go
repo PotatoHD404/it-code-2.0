@@ -28,7 +28,8 @@ func (cart *Cart) ResetCart() {
 			itemsToDelete = append(itemsToDelete, cart.Items[i])
 			cart.Items = append(cart.Items[:i], cart.Items[i+1:]...)
 		} else {
-			cart.Items[i].Price = &cart.Items[i].OrigPrice
+			cart.Items[i].Price = new(float)
+			*cart.Items[i].Price = cart.Items[i].OrigPrice
 			cart.Items[i].Discount = 0.0
 			cart.Sum += cart.Items[i].OrigPrice
 		}
@@ -74,6 +75,7 @@ func (m *CartItem) ApplyPromo(promo *Promo) {
 	m.Discount = m.OrigPrice - *m.Price
 	m.Used = true
 	promo.Applied = true
+	m.Used = true
 }
 func (cart *Cart) ApplyPromo(promo *Promo) {
 	prevPrice := cart.Sum
@@ -143,11 +145,10 @@ func (cart *Cart) ApplyPromocode(w http.ResponseWriter) {
 	var tempItems []*Item
 	for i := 0; i < len(promocodes); i++ {
 		promo := promocodes[i]
-		copy(tempItems, promo.ConditionItems)
-		if promo.Scope == "order" {
-			cart.ApplyPromo(&promo)
-		} else {
-			for _, item := range cart.Items {
+		tempItems = promo.ConditionItems
+		if promo.MinOrderSum == nil || cart.Sum >= *promo.MinOrderSum {
+			for i := 0; i < len(cart.Items); i++ {
+				item := cart.Items[i]
 				if !item.Selected {
 					if num := ArrContainsItem(promo.ConditionItems, item); num != -1 {
 						item.Selected = true
@@ -155,23 +156,36 @@ func (cart *Cart) ApplyPromocode(w http.ResponseWriter) {
 					}
 				}
 				if len(promo.ConditionItems) == 0 {
-					copy(promo.ConditionItems, tempItems)
-					copy(tempItems, promo.SelectorItems)
-					for _, item = range cart.Items {
-						if !item.Used {
-							if num := ArrContainsItem(promo.SelectorItems, item); num != -1 && item.Price != nil {
-								prevPrice := *item.Price
-								item.ApplyPromo(&promo)
-								cart.Sum -= prevPrice - *item.Price
-								promo.SelectorItems = append(promo.SelectorItems[:num], promo.SelectorItems[num+1:]...)
+					promo.ConditionItems = tempItems
+					tempItems = promo.SelectorItems
+					//copy(tempItems, promo.SelectorItems)
+					if promo.Scope == "order" {
+						cart.ApplyPromo(&promo)
+						break
+					} else {
+						applied := false
+						for _, item = range cart.Items {
+							if !item.Used {
+								if num := ArrContainsItem(promo.SelectorItems, item); num != -1 && item.Price != nil {
+									prevPrice := *item.Price
+									item.ApplyPromo(&promo)
+									applied = true
+									cart.Sum -= prevPrice - *item.Price
+									promo.SelectorItems = append(promo.SelectorItems[:num], promo.SelectorItems[num+1:]...)
+								}
+							}
+							if len(promo.SelectorItems) == 0 {
+								break
 							}
 						}
-						if len(promo.ConditionItems) == 0 {
+						cart.Promos = append(cart.Promos, &CartPromo{CartID: cart.ID, PromoID: promo.ID})
+						promo.SelectorItems = tempItems
+						if applied {
+							i = -1
+						} else {
 							break
 						}
 					}
-					cart.Promos = append(cart.Promos, &CartPromo{CartID: cart.ID, PromoID: promo.ID})
-					copy(promo.SelectorItems, tempItems)
 				}
 			}
 			if promo.Applied {
@@ -256,6 +270,11 @@ func GetCartFromDB(cartId string) *Cart {
 			panic("Item is not in db!")
 		} else {
 			m.Title = items[num].Title
+			if m.Price != nil {
+				m.Discount = m.OrigPrice - *m.Price
+			} else {
+				m.Discount = m.OrigPrice
+			}
 		}
 	}
 	return &cart

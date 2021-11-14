@@ -32,11 +32,12 @@ func AddItemToCart(w http.ResponseWriter, r *http.Request) {
 	//cart.Items = append(cart.Items, GetItemFromDB(itemId)
 	//Order("order.id ASC").
 	id, _ := shortid.Generate()
+	price := item.Price
 	cardItem := &CartItem{
 		CartItemID: id,
 		ItemID:     item.ID,
 		CartID:     cart.ID,
-		Price:      &item.Price,
+		Price:      &price,
 		OrigPrice:  item.Price,
 	}
 

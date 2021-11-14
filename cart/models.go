@@ -27,7 +27,7 @@ type Promo struct {
 	Discount       float    `bun:"discount" json:"-"`
 	Title          string   `bun:"title" json:"title"`
 	Scope          string   `bun:"scope" json:"-"`
-	MinOrderSum    float    `bun:"min_order_sum" json:"-"`
+	MinOrderSum    *float   `bun:"min_order_sum" json:"-"`
 	ConditionItems []*Item  `bun:"m2m:promo_condition_item,join:Promo=Item" json:"-"`
 	SelectorItems  []*Item  `bun:"m2m:promo_item_selector,join:Promo=Item" json:"-"`
 	GiftItems      []*Item  `bun:"m2m:promo_gift_items,join:Promo=Item" json:"-"`
