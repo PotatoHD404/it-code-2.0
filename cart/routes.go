@@ -129,7 +129,14 @@ func ApplyPromoToCart(w http.ResponseWriter, r *http.Request) {
 	//}
 
 }
-
+func ArrContainsCartPromo(s []*Promo, e *CartPromo) int {
+	for num, a := range s {
+		if a.ID == (*e).PromoID {
+			return num
+		}
+	}
+	return -1
+}
 func GetCart(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var cart = GetCartFromDB(mux.Vars(r)["cart_id"])
@@ -137,6 +144,19 @@ func GetCart(w http.ResponseWriter, r *http.Request) {
 		if item.Price == nil {
 			item.Price = new(float)
 		}
+	}
+	var items []*Item
+	for _, m := range cart.Items {
+		items = append(items, &Item{ID: m.ItemID})
+	}
+	var promos []*Promo
+	for _, promo := range cart.Promos {
+		promos = append(promos, &Promo{ID: promo.PromoID})
+	}
+	promos = GetPromosFromDB(promos)
+	for _, promo := range cart.Promos {
+		num := ArrContainsCartPromo(promos, promo)
+		promo.Title = promos[num].Title
 	}
 	err := json.NewEncoder(w).Encode(cart)
 	if err != nil {

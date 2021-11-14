@@ -145,7 +145,7 @@ func (cart *Cart) ApplyPromocode(w http.ResponseWriter) {
 	cart.OrigPrice = cart.Sum
 	var tempItems []*Item
 	for i := 0; i < len(promocodes); i++ {
-		if i == 3{
+		if i == 3 {
 			a := float(0.0)
 			cart.Sum -= a
 		}
@@ -166,7 +166,6 @@ func (cart *Cart) ApplyPromocode(w http.ResponseWriter) {
 					//copy(tempItems, promo.SelectorItems)
 					if promo.Scope == "order" {
 						cart.ApplyPromo(&promo)
-						break
 					} else {
 						//applied := false
 						if promo.Action == "gift" {
@@ -194,7 +193,6 @@ func (cart *Cart) ApplyPromocode(w http.ResponseWriter) {
 						//	cart.Promos = append(cart.Promos, &CartPromo{CartID: cart.ID, PromoID: promo.ID})
 						//	promo.SelectorItems = tempItems
 						//}
-
 
 						promo.SelectorItems = tempItems
 						tempItems = promo.ConditionItems
@@ -236,7 +234,7 @@ func (cart *Cart) ApplyPromocode(w http.ResponseWriter) {
 }
 
 func newDB() *bun.DB {
-	dsn := "itcode2021:itcode2021@tcp(mysql:3306)/itcode"
+	dsn := "itcode2021:itcode2021@tcp(localhost:3306)/itcode"
 	sqldb, err := sql.Open("mysql", dsn)
 	if err != nil {
 		panic(err)
@@ -320,8 +318,25 @@ func GetItemsFromDB(items []*Item) []*Item {
 	//err := db.NewSelect().
 	//	Model(&items).WherePK().
 	//	Scan(ctx)
-	q := db.NewSelect().Model(&items).WherePK()
-	err := q.Scan(ctx)
+	err := db.NewSelect().Model(&items).WherePK().Scan(ctx)
+
+	if err != nil && err.Error() == "sql: no rows in result set" {
+		return nil
+	} else if err != nil {
+		panic(err)
+	}
+	return items
+}
+
+func GetPromosFromDB(items []*Promo) []*Promo {
+	ctx := context.Background()
+	if items == nil {
+		return []*Promo{}
+	}
+	//err := db.NewSelect().
+	//	Model(&items).WherePK().
+	//	Scan(ctx)
+	err := db.NewSelect().Model(&items).WherePK().Scan(ctx)
 	if err != nil && err.Error() == "sql: no rows in result set" {
 		return nil
 	} else if err != nil {
