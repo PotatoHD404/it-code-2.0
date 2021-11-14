@@ -7,7 +7,6 @@ import (
 	"github.com/teris-io/shortid"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/mysqldialect"
-	"net/http"
 )
 
 func newRouter() *mux.Router {
@@ -42,10 +41,6 @@ func (cart *Cart) ResetCart() {
 	}
 	cart.Discount = 0.0
 	cart.Promos = []*CartPromo{}
-	//_, err := db.NewUpdate().Model(cart).WherePK().Exec(ctx)
-	//if err != nil {
-	//	panic(err)
-	//}
 }
 func ArrContainsItem(s []*Item, e *CartItem) int {
 	for num, a := range s {
@@ -74,7 +69,6 @@ func (m *CartItem) ApplyPromo(promo *Promo) {
 	}
 	m.Discount = m.OrigPrice - *m.Price
 	m.Used = true
-	//promo.AppliesCount++
 	m.Used = true
 }
 func (cart *Cart) ApplyPromo(promo *Promo) {
@@ -85,7 +79,6 @@ func (cart *Cart) ApplyPromo(promo *Promo) {
 		cart.Sum -= promo.Discount
 	} else /*if promo.Action == "gift"*/ {
 		for _, gift := range promo.GiftItems {
-			//item := GetItemFromDB(strconv.Itoa(int(gift.ID)))
 			id, _ := shortid.Generate()
 			newItem := &CartItem{
 				ItemID:     gift.ID,
@@ -112,9 +105,9 @@ func (cart *Cart) ApplyPromo(promo *Promo) {
 	promo.AppliesCount++
 	cart.Discount += prevPrice - cart.Sum
 	cart.Promos = append(cart.Promos, &CartPromo{CartID: cart.ID, PromoID: promo.ID})
-	//cart.Promos = append(cart.Promos, &CartPromo{CartID: cart.ID, PromoID: promo.ID})
 }
-func (cart *Cart) ApplyPromocode(w http.ResponseWriter) {
+
+func (cart *Cart) ApplyPromocode() {
 	var promocodes []Promo
 	err := db.NewSelect().
 		Model(&promocodes).
@@ -129,10 +122,6 @@ func (cart *Cart) ApplyPromocode(w http.ResponseWriter) {
 	if err != nil {
 		panic(err)
 	}
-	//err = json.NewEncoder(w).Encode(promocodes)
-	//if err != nil {
-	//	panic(err)
-	//}
 
 	cart.Sum = 0
 	for _, m := range cart.Items {
@@ -140,7 +129,6 @@ func (cart *Cart) ApplyPromocode(w http.ResponseWriter) {
 			m.Discount = m.OrigPrice - *m.Price
 			cart.Sum += *m.Price
 		}
-		//cart.Discount += m.Discount
 	}
 	cart.OrigPrice = cart.Sum
 	var tempItems []*Item
@@ -163,21 +151,18 @@ func (cart *Cart) ApplyPromocode(w http.ResponseWriter) {
 				if len(promo.ConditionItems) == 0 {
 					promo.ConditionItems = tempItems
 					tempItems = promo.SelectorItems
-					//copy(tempItems, promo.SelectorItems)
 					if promo.Scope == "order" {
 						cart.ApplyPromo(&promo)
+						break
 					} else {
-						//applied := false
 						if promo.Action == "gift" {
 							cart.ApplyPromo(&promo)
-							//applied = true
 						} else {
 							for _, item = range cart.Items {
 								if !item.Used {
 									if num := ArrContainsItem(promo.SelectorItems, item); num != -1 && item.Price != nil {
 										prevPrice := *item.Price
 										item.ApplyPromo(&promo)
-										//applied = true
 										cart.Sum -= prevPrice - *item.Price
 										promo.SelectorItems = append(promo.SelectorItems[:num], promo.SelectorItems[num+1:]...)
 									}
@@ -189,11 +174,6 @@ func (cart *Cart) ApplyPromocode(w http.ResponseWriter) {
 							cart.Promos = append(cart.Promos, &CartPromo{CartID: cart.ID, PromoID: promo.ID})
 							promo.AppliesCount++
 						}
-						//if !applied && promo.AppliesCount == 0 || applied && promo.AppliesCount != 0 {
-						//	cart.Promos = append(cart.Promos, &CartPromo{CartID: cart.ID, PromoID: promo.ID})
-						//	promo.SelectorItems = tempItems
-						//}
-
 						promo.SelectorItems = tempItems
 						tempItems = promo.ConditionItems
 						j = -1
@@ -201,9 +181,6 @@ func (cart *Cart) ApplyPromocode(w http.ResponseWriter) {
 				}
 			}
 			if promo.AppliesCount > 0 {
-				//for i := 0; i < int(promo.AppliesCount); i++ {
-				//
-				//}
 				for _, exPromo := range promo.Exclusions {
 					if num := ArrContainsPromo(promocodes, exPromo); num != -1 {
 						promocodes = append(promocodes[:num], promocodes[num+1:]...)
@@ -218,28 +195,16 @@ func (cart *Cart) ApplyPromocode(w http.ResponseWriter) {
 				item.Used = false
 			}
 		}
-
-		//cart.Sum = 0
-		//for _, m := range cart.Items {
-		//	if m.Price != nil {
-		//		m.Discount = m.OrigPrice - *m.Price
-		//		//cart.Sum += *m.Price
-		//	}
-		//	cart.Sum -= m.Discount
-		//}
-		//cart.Discount = cart.OrigPrice - cart.Sum
-		//cart.Discount
 	}
 
 }
 
 func newDB() *bun.DB {
-	dsn := "itcode2021:itcode2021@tcp(localhost:3306)/itcode"
+	dsn := "itcode2021:itcode2021@tcp(mysql:3306)/itcode"
 	sqldb, err := sql.Open("mysql", dsn)
 	if err != nil {
 		panic(err)
 	}
-	//sqldb := sql.OpenDB(pgdriver.NewConnector(pgdriver.WithDSN(dsn)))
 	db := bun.NewDB(sqldb, mysqldialect.New())
 	db.RegisterModel(
 		(*PromoExclusions)(nil),
@@ -315,9 +280,6 @@ func GetItemsFromDB(items []*Item) []*Item {
 	if items == nil {
 		return []*Item{}
 	}
-	//err := db.NewSelect().
-	//	Model(&items).WherePK().
-	//	Scan(ctx)
 	err := db.NewSelect().Model(&items).WherePK().Scan(ctx)
 
 	if err != nil && err.Error() == "sql: no rows in result set" {
@@ -333,9 +295,6 @@ func GetPromosFromDB(items []*Promo) []*Promo {
 	if items == nil {
 		return []*Promo{}
 	}
-	//err := db.NewSelect().
-	//	Model(&items).WherePK().
-	//	Scan(ctx)
 	err := db.NewSelect().Model(&items).WherePK().Scan(ctx)
 	if err != nil && err.Error() == "sql: no rows in result set" {
 		return nil

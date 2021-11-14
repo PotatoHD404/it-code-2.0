@@ -25,12 +25,8 @@ func TestFunc(w http.ResponseWriter, _ *http.Request) {
 }
 
 func AddItemToCart(w http.ResponseWriter, r *http.Request) {
-	//w.Header().Set("Content-Type", "application/json")
-
 	var item = GetItemFromDB(r.FormValue("item_id"))
 	var cart = GetCartFromDB(mux.Vars(r)["cart_id"])
-	//cart.Items = append(cart.Items, GetItemFromDB(itemId)
-	//Order("order.id ASC").
 	id, _ := shortid.Generate()
 	price := item.Price
 	cardItem := &CartItem{
@@ -49,22 +45,21 @@ func AddItemToCart(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, err.Error(), 422)
 		return
-		//panic(err)
 	}
 	if len(cart.Promos) > 0 {
 		_, err := db.NewDelete().Model(&cart.Promos).WherePK().Exec(ctx)
 		if err != nil {
 			http.Error(w, err.Error(), 422)
-			panic(err)
+			return
 		}
 	}
 	cart.ResetCart()
-	cart.ApplyPromocode(w)
+	cart.ApplyPromocode()
 	if len(cart.Promos) > 0 {
 		_, err := db.NewInsert().Model(&cart.Promos).Exec(ctx)
 		if err != nil {
 			http.Error(w, err.Error(), 422)
-			panic(err)
+			return
 		}
 	}
 	_, err = db.NewUpdate().Model(cart).WherePK().Exec(ctx)
@@ -73,21 +68,12 @@ func AddItemToCart(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), 422)
 		return
 	}
-	//values := db.NewValues(&cart.Items)
-	//_, err = db.NewUpdate().
-	//	With("_data", values).
-	//	Model((*CartItem)(nil)).
-	//	TableExpr("_data").
-	//	Where("card_item.id = _data.id").
-	//	Exec(ctx)
 	_, err = db.NewUpdate().Model(&cart.Items).Column("price", "orig_price", "cart_item_id").Bulk().Exec(ctx)
 	if err != nil {
 		http.Error(w, err.Error(), 422)
+		return
 	} else {
 		w.WriteHeader(http.StatusCreated)
-		if err != nil {
-			panic(err)
-		}
 	}
 }
 
@@ -100,33 +86,30 @@ func ApplyPromoToCart(w http.ResponseWriter, r *http.Request) {
 		_, err := db.NewDelete().Model(&cart.Promos).WherePK().Exec(ctx)
 		if err != nil {
 			http.Error(w, err.Error(), 422)
-			panic(err)
+			return
 		}
 	}
 	cart.ResetCart()
-	cart.ApplyPromocode(w)
+	cart.ApplyPromocode()
 	if len(cart.Promos) > 0 {
 		_, err := db.NewInsert().Model(&cart.Promos).Exec(ctx)
 		if err != nil {
 			http.Error(w, err.Error(), 422)
-			panic(err)
+			return
 		}
 	}
 	_, err := db.NewUpdate().Model(cart).WherePK().Exec(ctx)
 
 	if err != nil {
-		panic(err)
+		http.Error(w, err.Error(), 422)
+		return
 	}
 
 	_, err = db.NewUpdate().Model(&cart.Items).Column("price", "orig_price", "cart_item_id").Bulk().Exec(ctx)
 	if err != nil {
-		panic(err)
+		http.Error(w, err.Error(), 422)
+		return
 	}
-
-	//err = json.NewEncoder(w).Encode(cart)
-	//if err != nil {
-	//	panic(err)
-	//}
 
 }
 func ArrContainsCartPromo(s []*Promo, e *CartPromo) int {
@@ -140,14 +123,14 @@ func ArrContainsCartPromo(s []*Promo, e *CartPromo) int {
 func GetCart(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var cart = GetCartFromDB(mux.Vars(r)["cart_id"])
+	if cart == nil{
+		http.Error(w, "Cart not found", 422)
+		return
+	}
 	for _, item := range cart.Items {
 		if item.Price == nil {
 			item.Price = new(float)
 		}
-	}
-	var items []*Item
-	for _, m := range cart.Items {
-		items = append(items, &Item{ID: m.ItemID})
 	}
 	var promos []*Promo
 	for _, promo := range cart.Promos {
@@ -160,7 +143,8 @@ func GetCart(w http.ResponseWriter, r *http.Request) {
 	}
 	err := json.NewEncoder(w).Encode(cart)
 	if err != nil {
-		panic(err)
+		http.Error(w, err.Error(), 422)
+		return
 	}
 }
 
@@ -170,21 +154,21 @@ func CreateCart(w http.ResponseWriter, _ *http.Request) {
 	var cart = Cart{CartID: id}
 	_, err := db.NewInsert().Model(&cart).Exec(ctx)
 	if err != nil {
-		panic(err)
+		http.Error(w, err.Error(), 422)
+		return
 	}
 	type Response struct {
 		ShortID string `json:"cart_id"`
 	}
 	if err != nil {
-		//w.WriteHeader(http.StatusCreated)
 		http.Error(w, err.Error(), 422)
-		//panic(err)
 	} else {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		err = json.NewEncoder(w).Encode(Response{ShortID: id})
 		if err != nil {
-			panic(err)
+			http.Error(w, err.Error(), 422)
+			return
 		}
 	}
 }
