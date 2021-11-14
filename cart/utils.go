@@ -42,10 +42,10 @@ func (cart *Cart) ResetCart() {
 	}
 	cart.Discount = 0.0
 	cart.Promos = []*CartPromo{}
-	_, err := db.NewUpdate().Model(cart).WherePK().Exec(ctx)
-	if err != nil {
-		panic(err)
-	}
+	//_, err := db.NewUpdate().Model(cart).WherePK().Exec(ctx)
+	//if err != nil {
+	//	panic(err)
+	//}
 }
 func ArrContainsItem(s []*Item, e *CartItem) int {
 	for num, a := range s {
@@ -74,7 +74,7 @@ func (m *CartItem) ApplyPromo(promo *Promo) {
 	}
 	m.Discount = m.OrigPrice - *m.Price
 	m.Used = true
-	promo.Applied = true
+	//promo.AppliesCount++
 	m.Used = true
 }
 func (cart *Cart) ApplyPromo(promo *Promo) {
@@ -109,9 +109,10 @@ func (cart *Cart) ApplyPromo(promo *Promo) {
 	if cart.Sum < 0 {
 		cart.Sum = 0
 	}
-	promo.Applied = true
+	promo.AppliesCount++
 	cart.Discount += prevPrice - cart.Sum
 	cart.Promos = append(cart.Promos, &CartPromo{CartID: cart.ID, PromoID: promo.ID})
+	//cart.Promos = append(cart.Promos, &CartPromo{CartID: cart.ID, PromoID: promo.ID})
 }
 func (cart *Cart) ApplyPromocode(w http.ResponseWriter) {
 	var promocodes []Promo
@@ -144,11 +145,15 @@ func (cart *Cart) ApplyPromocode(w http.ResponseWriter) {
 	cart.OrigPrice = cart.Sum
 	var tempItems []*Item
 	for i := 0; i < len(promocodes); i++ {
+		if i == 3{
+			a := float(0.0)
+			cart.Sum -= a
+		}
 		promo := promocodes[i]
 		tempItems = promo.ConditionItems
 		if promo.MinOrderSum == nil || cart.Sum >= *promo.MinOrderSum {
-			for i := 0; i < len(cart.Items); i++ {
-				item := cart.Items[i]
+			for j := 0; j < len(cart.Items); j++ {
+				item := cart.Items[j]
 				if !item.Selected {
 					if num := ArrContainsItem(promo.ConditionItems, item); num != -1 {
 						item.Selected = true
@@ -163,32 +168,44 @@ func (cart *Cart) ApplyPromocode(w http.ResponseWriter) {
 						cart.ApplyPromo(&promo)
 						break
 					} else {
-						applied := false
-						for _, item = range cart.Items {
-							if !item.Used {
-								if num := ArrContainsItem(promo.SelectorItems, item); num != -1 && item.Price != nil {
-									prevPrice := *item.Price
-									item.ApplyPromo(&promo)
-									applied = true
-									cart.Sum -= prevPrice - *item.Price
-									promo.SelectorItems = append(promo.SelectorItems[:num], promo.SelectorItems[num+1:]...)
+						//applied := false
+						if promo.Action == "gift" {
+							cart.ApplyPromo(&promo)
+							//applied = true
+						} else {
+							for _, item = range cart.Items {
+								if !item.Used {
+									if num := ArrContainsItem(promo.SelectorItems, item); num != -1 && item.Price != nil {
+										prevPrice := *item.Price
+										item.ApplyPromo(&promo)
+										//applied = true
+										cart.Sum -= prevPrice - *item.Price
+										promo.SelectorItems = append(promo.SelectorItems[:num], promo.SelectorItems[num+1:]...)
+									}
+								}
+								if len(promo.SelectorItems) == 0 {
+									break
 								}
 							}
-							if len(promo.SelectorItems) == 0 {
-								break
-							}
+							cart.Promos = append(cart.Promos, &CartPromo{CartID: cart.ID, PromoID: promo.ID})
+							promo.AppliesCount++
 						}
-						cart.Promos = append(cart.Promos, &CartPromo{CartID: cart.ID, PromoID: promo.ID})
+						//if !applied && promo.AppliesCount == 0 || applied && promo.AppliesCount != 0 {
+						//	cart.Promos = append(cart.Promos, &CartPromo{CartID: cart.ID, PromoID: promo.ID})
+						//	promo.SelectorItems = tempItems
+						//}
+
+
 						promo.SelectorItems = tempItems
-						if applied {
-							i = -1
-						} else {
-							break
-						}
+						tempItems = promo.ConditionItems
+						j = -1
 					}
 				}
 			}
-			if promo.Applied {
+			if promo.AppliesCount > 0 {
+				//for i := 0; i < int(promo.AppliesCount); i++ {
+				//
+				//}
 				for _, exPromo := range promo.Exclusions {
 					if num := ArrContainsPromo(promocodes, exPromo); num != -1 {
 						promocodes = append(promocodes[:num], promocodes[num+1:]...)

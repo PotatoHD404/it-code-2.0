@@ -51,7 +51,6 @@ func AddItemToCart(w http.ResponseWriter, r *http.Request) {
 		return
 		//panic(err)
 	}
-	cart.ResetCart()
 	if len(cart.Promos) > 0 {
 		_, err := db.NewDelete().Model(&cart.Promos).WherePK().Exec(ctx)
 		if err != nil {
@@ -59,6 +58,7 @@ func AddItemToCart(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 	}
+	cart.ResetCart()
 	cart.ApplyPromocode(w)
 	if len(cart.Promos) > 0 {
 		_, err := db.NewInsert().Model(&cart.Promos).Exec(ctx)
@@ -96,7 +96,6 @@ func ApplyPromoToCart(w http.ResponseWriter, r *http.Request) {
 	var cart = GetCartFromDB(mux.Vars(r)["cart_id"])
 
 	cart.Promocode = r.FormValue("promocode")
-	cart.ResetCart()
 	if len(cart.Promos) > 0 {
 		_, err := db.NewDelete().Model(&cart.Promos).WherePK().Exec(ctx)
 		if err != nil {
@@ -104,6 +103,7 @@ func ApplyPromoToCart(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 	}
+	cart.ResetCart()
 	cart.ApplyPromocode(w)
 	if len(cart.Promos) > 0 {
 		_, err := db.NewInsert().Model(&cart.Promos).Exec(ctx)
@@ -133,6 +133,11 @@ func ApplyPromoToCart(w http.ResponseWriter, r *http.Request) {
 func GetCart(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var cart = GetCartFromDB(mux.Vars(r)["cart_id"])
+	for _, item := range cart.Items {
+		if item.Price == nil {
+			item.Price = new(float)
+		}
+	}
 	err := json.NewEncoder(w).Encode(cart)
 	if err != nil {
 		panic(err)
