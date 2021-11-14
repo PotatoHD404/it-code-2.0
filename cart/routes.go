@@ -10,12 +10,12 @@ import (
 func AddItemToCart(w http.ResponseWriter, r *http.Request) {
 	item, err := GetItemFromDB(r.FormValue("item_id"))
 	if err != nil {
-		http.Error(w, err.Error(), 422)
+		http.Error(w, err.Error(), 500)
 		return
 	}
 	cart, err := GetCartFromDB(mux.Vars(r)["cart_id"])
 	if err != nil {
-		http.Error(w, err.Error(), 422)
+		http.Error(w, err.Error(), 500)
 		return
 	}
 	id, _ := shortid.Generate()
@@ -34,42 +34,42 @@ func AddItemToCart(w http.ResponseWriter, r *http.Request) {
 		Model(cardItem).
 		Exec(ctx)
 	if err != nil {
-		http.Error(w, err.Error(), 422)
+		http.Error(w, err.Error(), 500)
 		return
 	}
 	if len(cart.Promos) > 0 {
 		_, err := db.NewDelete().Model(&cart.Promos).WherePK().Exec(ctx)
 		if err != nil {
-			http.Error(w, err.Error(), 422)
+			http.Error(w, err.Error(), 500)
 			return
 		}
 	}
 	err = cart.ResetCart()
 	if err != nil {
-		http.Error(w, err.Error(), 422)
+		http.Error(w, err.Error(), 500)
 		return
 	}
 	err = cart.ApplyPromocode()
 	if err != nil {
-		http.Error(w, err.Error(), 422)
+		http.Error(w, err.Error(), 500)
 		return
 	}
 	if len(cart.Promos) > 0 {
 		_, err := db.NewInsert().Model(&cart.Promos).Exec(ctx)
 		if err != nil {
-			http.Error(w, err.Error(), 422)
+			http.Error(w, err.Error(), 500)
 			return
 		}
 	}
 	_, err = db.NewUpdate().Model(cart).WherePK().Exec(ctx)
 
 	if err != nil {
-		http.Error(w, err.Error(), 422)
+		http.Error(w, err.Error(), 500)
 		return
 	}
 	_, err = db.NewUpdate().Model(&cart.Items).Column("price", "orig_price", "cart_item_id").Bulk().Exec(ctx)
 	if err != nil {
-		http.Error(w, err.Error(), 422)
+		http.Error(w, err.Error(), 500)
 		return
 	} else {
 		w.WriteHeader(http.StatusCreated)
@@ -80,44 +80,44 @@ func ApplyPromoToCart(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	cart, err := GetCartFromDB(mux.Vars(r)["cart_id"])
 	if err != nil {
-		http.Error(w, err.Error(), 422)
+		http.Error(w, err.Error(), 500)
 		return
 	}
 	cart.Promocode = r.FormValue("promocode")
 	if len(cart.Promos) > 0 {
 		_, err := db.NewDelete().Model(&cart.Promos).WherePK().Exec(ctx)
 		if err != nil {
-			http.Error(w, err.Error(), 422)
+			http.Error(w, err.Error(), 500)
 			return
 		}
 	}
 	err = cart.ResetCart()
 	if err != nil {
-		http.Error(w, err.Error(), 422)
+		http.Error(w, err.Error(), 500)
 		return
 	}
 	err = cart.ApplyPromocode()
 	if err != nil {
-		http.Error(w, err.Error(), 422)
+		http.Error(w, err.Error(), 500)
 		return
 	}
 	if len(cart.Promos) > 0 {
 		_, err := db.NewInsert().Model(&cart.Promos).Exec(ctx)
 		if err != nil {
-			http.Error(w, err.Error(), 422)
+			http.Error(w, err.Error(), 500)
 			return
 		}
 	}
 	_, err = db.NewUpdate().Model(cart).WherePK().Exec(ctx)
 
 	if err != nil {
-		http.Error(w, err.Error(), 422)
+		http.Error(w, err.Error(), 500)
 		return
 	}
 
 	_, err = db.NewUpdate().Model(&cart.Items).Column("price", "orig_price", "cart_item_id").Bulk().Exec(ctx)
 	if err != nil {
-		http.Error(w, err.Error(), 422)
+		http.Error(w, err.Error(), 500)
 		return
 	}
 
@@ -134,7 +134,7 @@ func GetCart(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var cart, err = GetCartFromDB(mux.Vars(r)["cart_id"])
 	if err != nil {
-		http.Error(w, err.Error(), 422)
+		http.Error(w, err.Error(), 500)
 		return
 	}
 	if cart == nil {
@@ -152,7 +152,7 @@ func GetCart(w http.ResponseWriter, r *http.Request) {
 	}
 	promos, err = GetPromosFromDB(promos)
 	if err != nil {
-		http.Error(w, err.Error(), 422)
+		http.Error(w, err.Error(), 500)
 		return
 	}
 	for _, promo := range cart.Promos {
@@ -161,7 +161,7 @@ func GetCart(w http.ResponseWriter, r *http.Request) {
 	}
 	err = json.NewEncoder(w).Encode(cart)
 	if err != nil {
-		http.Error(w, err.Error(), 422)
+		http.Error(w, err.Error(), 500)
 		return
 	}
 }
@@ -172,20 +172,20 @@ func CreateCart(w http.ResponseWriter, _ *http.Request) {
 	var cart = Cart{CartID: id}
 	_, err := db.NewInsert().Model(&cart).Exec(ctx)
 	if err != nil {
-		http.Error(w, err.Error(), 422)
+		http.Error(w, err.Error(), 500)
 		return
 	}
 	type Response struct {
 		ShortID string `json:"cart_id"`
 	}
 	if err != nil {
-		http.Error(w, err.Error(), 422)
+		http.Error(w, err.Error(), 500)
 	} else {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		err = json.NewEncoder(w).Encode(Response{ShortID: id})
 		if err != nil {
-			http.Error(w, err.Error(), 422)
+			http.Error(w, err.Error(), 500)
 			return
 		}
 	}

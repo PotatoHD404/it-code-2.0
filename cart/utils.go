@@ -66,16 +66,17 @@ func (cart *Cart) FlushItems() {
 	}
 }
 func (cart *Cart) ApplyItemPromo(promo *Promo) {
+	tempItems := promo.SelectorItems
 	for _, item := range cart.Items {
 		if !item.Used {
-			if num := ArrContainsItem(promo.SelectorItems, item); num != -1 && item.Price != nil {
+			if num := ArrContainsItem(tempItems, item); num != -1 && item.Price != nil {
 				prevPrice := *item.Price
 				item.ApplyPromo(promo)
 				cart.Sum -= prevPrice - *item.Price
-				promo.SelectorItems = append(promo.SelectorItems[:num], promo.SelectorItems[num+1:]...)
+				tempItems = append(tempItems[:num], tempItems[num+1:]...)
 			}
 		}
-		if len(promo.SelectorItems) == 0 {
+		if len(tempItems) == 0 {
 			break
 		}
 	}
@@ -83,9 +84,25 @@ func (cart *Cart) ApplyItemPromo(promo *Promo) {
 	promo.AppliesCount++
 }
 
-//func (promo *Promo) CheckCondition(cart *Cart) {
-//
-//}
+func (cart *Cart) CheckConditions(promo *Promo) (bool, error) {
+	var tempItems []*Item
+	tempItems = promo.ConditionItems
+	if promo.MinOrderSum == nil || cart.Sum >= *promo.MinOrderSum {
+		for j := 0; j < len(cart.Items); j++ {
+			item := cart.Items[j]
+			if !item.Selected {
+				if num := ArrContainsItem(tempItems, item); num != -1 {
+					item.Selected = true
+					tempItems = append(tempItems[:num], tempItems[num+1:]...)
+				}
+			}
+			if len(tempItems) == 0 {
+				return true, nil
+			}
+		}
+	}
+	return false, nil
+}
 
 func (promo *Promo) Exclude(promocodes *[]Promo, i *int) {
 	if promo.AppliesCount > 0 {
@@ -163,47 +180,35 @@ func (cart *Cart) ApplyPromocode() error {
 		}
 	}
 	cart.OrigPrice = cart.Sum
-	var tempItems []*Item
 	for i := 0; i < len(promocodes); i++ {
 		promo := promocodes[i]
-		tempItems = promo.ConditionItems
-		if promo.MinOrderSum == nil || cart.Sum >= *promo.MinOrderSum {
-			for j := 0; j < len(cart.Items); j++ {
-				item := cart.Items[j]
-				if !item.Selected {
-					if num := ArrContainsItem(promo.ConditionItems, item); num != -1 {
-						item.Selected = true
-						promo.ConditionItems = append(promo.ConditionItems[:num], promo.ConditionItems[num+1:]...)
+		cond := true
+		for cond {
+			cond, err = cart.CheckConditions(&promo)
+			if err != nil {
+				return err
+			}
+			if cond {
+				if promo.Scope == "order" {
+					err := cart.ApplyOrderPromo(&promo)
+					if err != nil {
+						return err
 					}
-				}
-				if len(promo.ConditionItems) == 0 {
-					promo.ConditionItems = tempItems
-					tempItems = promo.SelectorItems
-					if promo.Scope == "order" {
+					break
+				} else {
+					if promo.Action == "gift" {
 						err := cart.ApplyOrderPromo(&promo)
 						if err != nil {
 							return err
 						}
-						break
 					} else {
-						if promo.Action == "gift" {
-							err := cart.ApplyOrderPromo(&promo)
-							if err != nil {
-								return err
-							}
-						} else {
-							cart.ApplyItemPromo(&promo)
-						}
-						promo.SelectorItems = tempItems
-						tempItems = promo.ConditionItems
-						j = -1
+						cart.ApplyItemPromo(&promo)
 					}
 				}
 			}
-			promo.Exclude(&promocodes, &i)
-			cart.FlushItems()
 		}
-
+		promo.Exclude(&promocodes, &i)
+		cart.FlushItems()
 	}
 	return nil
 }
