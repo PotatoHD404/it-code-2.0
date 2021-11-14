@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"github.com/gorilla/mux"
 	"github.com/teris-io/shortid"
 	"github.com/uptrace/bun"
@@ -23,17 +24,21 @@ func newRouter() *mux.Router {
 
 func (cart *Cart) ResetCart() {
 	cart.Sum = 0.0
+	var itemsToDelete []*CartItem
 	for i := 0; i < len(cart.Items); i++ {
 		if cart.Items[i].Price == nil {
-			_, err := db.NewDelete().Model(cart.Items[i]).WherePK().Exec(ctx)
-			if err != nil {
-				panic(err)
-			}
-
+			itemsToDelete = append(itemsToDelete, cart.Items[i])
+			cart.Items = append(cart.Items[:i], cart.Items[i+1:]...)
 		} else {
 			cart.Items[i].Price = &cart.Items[i].OrigPrice
 			cart.Items[i].Discount = 0.0
 			cart.Sum += cart.Items[i].OrigPrice
+		}
+	}
+	if len(itemsToDelete) > 0 {
+		_, err := db.NewDelete().Model(&itemsToDelete).WherePK().Exec(ctx)
+		if err != nil {
+			panic(err)
 		}
 	}
 	cart.Discount = 0.0
@@ -119,10 +124,13 @@ func (cart *Cart) ApplyPromocode(w http.ResponseWriter) {
 		WhereOr("promocode = ?", cart.Promocode).
 		Order("id ASC").
 		Scan(ctx)
-	//err = json.NewEncoder(w).Encode(promocodes)
-	//if err != nil {
-	//	panic(err)
-	//}
+	if err != nil {
+		panic(err)
+	}
+	err = json.NewEncoder(w).Encode(promocodes)
+	if err != nil {
+		panic(err)
+	}
 	var tempItems []*Item
 	for i := 0; i < len(promocodes); i++ {
 		promo := promocodes[i]
@@ -165,15 +173,20 @@ func (cart *Cart) ApplyPromocode(w http.ResponseWriter) {
 				}
 			}
 		}
-	}
-	if err != nil {
-		panic(err)
+
+		cart.Sum = 0
+		cart.Discount = 0
+		for _, m := range cart.Items {
+			if m.Price != nil {
+				m.Discount = m.OrigPrice - *m.Price
+				cart.Sum += *m.Price
+			} else {
+				m.Discount = m.OrigPrice
+			}
+			cart.Discount += m.Discount
+		}
 	}
 
-	_, err = db.NewUpdate().Model(cart).WherePK().Exec(ctx)
-	if err != nil {
-		panic(err)
-	}
 }
 
 func newDB() *bun.DB {
@@ -216,22 +229,14 @@ func GetCartFromDB(cartId string) *Cart {
 			cart.Promos = []*Promo{}
 		}
 	}
-	var prev = Item{}
+	var itemIDs []string
 	for _, m := range cart.Items {
-		if prev.ID != m.ItemID {
-			m.Item = GetItemFromDB(strconv.Itoa(int(m.ItemID)))
-			prev = *m.Item
-		} else {
-			m.Item = &prev
-		}
-		m.Title = m.Item.Title
-		if m.Price != nil {
-			m.Discount = m.OrigPrice - *m.Price
-			cart.Sum += *m.Price
-		} else {
-			m.Discount = m.OrigPrice
-		}
-		cart.Discount += m.Discount
+		itemIDs = append(itemIDs, strconv.Itoa(int(m.ItemID)))
+	}
+
+	items := GetItemsFromDB(itemIDs)
+	for num, m := range cart.Items {
+		m.Title = items[num].Title
 	}
 	return &cart
 }
@@ -249,4 +254,18 @@ func GetItemFromDB(itemID string) *Item {
 		panic(err)
 	}
 	return &item
+}
+
+func GetItemsFromDB(itemID []string) []*Item {
+	var item []*Item
+	ctx := context.Background()
+	err := db.NewSelect().
+		Model(&item).WherePK(itemID...).
+		Scan(ctx)
+	if err != nil && err.Error() == "sql: no rows in result set" {
+		return nil
+	} else if err != nil {
+		panic(err)
+	}
+	return item
 }

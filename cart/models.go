@@ -77,8 +77,8 @@ type Cart struct {
 	Items         []*CartItem `bun:"rel:has-many,join:id=cart_id" json:"items"`
 	Promos        []*Promo    `bun:"m2m:cart_promos,join:Cart=Promo" json:"promos"`
 	Promocode     string      `bun:"promocode" json:"promocode"`
-	Sum           float       `bun:"-" json:"cart_sum"`
-	Discount      float       `bun:"-" json:"cart_discount"`
+	Sum           float       `bun:"cart_sum" json:"cart_sum"`
+	Discount      float       `bun:"cart_discount" json:"cart_discount"`
 }
 
 type CartItem struct {

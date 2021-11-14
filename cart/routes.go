@@ -83,9 +83,10 @@ func ApplyPromoToCart(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var cart = GetCartFromDB(mux.Vars(r)["cart_id"])
 
+	cart.Promocode = r.FormValue("promocode")
 	cart.ResetCart()
 	cart.ApplyPromocode(w)
-	cart.Promocode = r.FormValue("promocode")
+
 	_, err := db.NewUpdate().Model(cart).WherePK().Exec(ctx)
 
 	if err != nil {

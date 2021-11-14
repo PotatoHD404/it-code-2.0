@@ -81,12 +81,13 @@ create table promo_item_selector
 
 create table orders
 (
-    id        int unsigned auto_increment
+    id            int unsigned auto_increment
         primary key,
-    cart_id   varchar(10)  not null,
-    promocode varchar(100) not null
+    cart_id       varchar(10)  not null,
+    promocode     varchar(100) not null,
+    cart_sum      float        not null,
+    cart_discount float        not null
 );
-
 
 create table cart_items
 (
