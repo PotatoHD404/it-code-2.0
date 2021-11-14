@@ -2,24 +2,10 @@ package main
 
 import (
 	"context"
-	"database/sql"
-	"github.com/gorilla/mux"
 	"github.com/teris-io/shortid"
-	"github.com/uptrace/bun"
-	"github.com/uptrace/bun/dialect/mysqldialect"
 )
 
-func newRouter() *mux.Router {
-	r := mux.NewRouter()
-	r.HandleFunc("/", CreateCart).Methods("POST")
-	r.HandleFunc("/{cart_id}/promocode", ApplyPromoToCart).Methods("POST")
-	r.HandleFunc("/test", TestFunc).Methods("GET")
-	r.HandleFunc("/{cart_id}/items", AddItemToCart).Methods("POST")
-	r.HandleFunc("/{cart_id}", GetCart).Methods("GET")
-	return r
-}
-
-func (cart *Cart) ResetCart() {
+func (cart *Cart) ResetCart() error {
 	cart.Sum = 0.0
 	var itemsToDelete []*CartItem
 	for i := 0; i < len(cart.Items); i++ {
@@ -36,11 +22,12 @@ func (cart *Cart) ResetCart() {
 	if len(itemsToDelete) > 0 {
 		_, err := db.NewDelete().Model(&itemsToDelete).WherePK().Exec(ctx)
 		if err != nil {
-			panic(err)
+			return err
 		}
 	}
 	cart.Discount = 0.0
 	cart.Promos = []*CartPromo{}
+	return nil
 }
 func ArrContainsItem(s []*Item, e *CartItem) int {
 	for num, a := range s {
@@ -71,7 +58,12 @@ func (m *CartItem) ApplyPromo(promo *Promo) {
 	m.Used = true
 	m.Used = true
 }
-func (cart *Cart) ApplyPromo(promo *Promo) {
+
+//func (cart *Cart) ApplyItemPromo(promo *Promo) error {
+//
+//}
+
+func (cart *Cart) ApplyOrderPromo(promo *Promo) error {
 	prevPrice := cart.Sum
 	if promo.Action == "percent_discount" {
 		cart.Sum -= cart.Sum * promo.Discount / 100.0
@@ -94,7 +86,7 @@ func (cart *Cart) ApplyPromo(promo *Promo) {
 				Exec(ctx)
 
 			if err != nil {
-				panic(err)
+				return err
 			}
 			cart.Items = append(cart.Items, newItem)
 		}
@@ -105,9 +97,10 @@ func (cart *Cart) ApplyPromo(promo *Promo) {
 	promo.AppliesCount++
 	cart.Discount += prevPrice - cart.Sum
 	cart.Promos = append(cart.Promos, &CartPromo{CartID: cart.ID, PromoID: promo.ID})
+	return nil
 }
 
-func (cart *Cart) ApplyPromocode() {
+func (cart *Cart) ApplyPromocode() error {
 	var promocodes []Promo
 	err := db.NewSelect().
 		Model(&promocodes).
@@ -120,7 +113,7 @@ func (cart *Cart) ApplyPromocode() {
 		Order("id ASC").
 		Scan(ctx)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	cart.Sum = 0
@@ -152,11 +145,17 @@ func (cart *Cart) ApplyPromocode() {
 					promo.ConditionItems = tempItems
 					tempItems = promo.SelectorItems
 					if promo.Scope == "order" {
-						cart.ApplyPromo(&promo)
+						err := cart.ApplyOrderPromo(&promo)
+						if err != nil {
+							return err
+						}
 						break
 					} else {
 						if promo.Action == "gift" {
-							cart.ApplyPromo(&promo)
+							err := cart.ApplyOrderPromo(&promo)
+							if err != nil {
+								return err
+							}
 						} else {
 							for _, item = range cart.Items {
 								if !item.Used {
@@ -196,27 +195,10 @@ func (cart *Cart) ApplyPromocode() {
 			}
 		}
 	}
-
+	return nil
 }
 
-func newDB() *bun.DB {
-	dsn := "itcode2021:itcode2021@tcp(mysql:3306)/itcode"
-	sqldb, err := sql.Open("mysql", dsn)
-	if err != nil {
-		panic(err)
-	}
-	db := bun.NewDB(sqldb, mysqldialect.New())
-	db.RegisterModel(
-		(*PromoExclusions)(nil),
-		(*PromoConditionItem)(nil),
-		(*PromoGiftItem)(nil),
-		(*PromoItemSelector)(nil),
-		(*CartItem)(nil),
-		(*CartPromo)(nil))
-	return db
-}
-
-func GetCartFromDB(cartId string) *Cart {
+func GetCartFromDB(cartId string) (*Cart, error) {
 	var cart Cart
 	ctx := context.Background()
 	err := db.NewSelect().
@@ -226,9 +208,9 @@ func GetCartFromDB(cartId string) *Cart {
 		Relation("Promos").
 		Scan(ctx)
 	if err != nil && err.Error() == "sql: no rows in result set" {
-		return nil
+		return nil, err
 	} else if err != nil {
-		panic(err)
+		return nil, err
 	}
 	if &cart != nil {
 		if cart.Items == nil {
@@ -243,24 +225,25 @@ func GetCartFromDB(cartId string) *Cart {
 		items = append(items, &Item{ID: m.ItemID})
 	}
 
-	items = GetItemsFromDB(items)
+	items, err = GetItemsFromDB(items)
+	if err != nil {
+		return nil, err
+	}
 	for _, m := range cart.Items {
 		num := ArrContainsItem(items, m)
-		if num == -1 {
-			panic("Item is not in db!")
+
+		m.Title = items[num].Title
+		if m.Price != nil {
+			m.Discount = m.OrigPrice - *m.Price
 		} else {
-			m.Title = items[num].Title
-			if m.Price != nil {
-				m.Discount = m.OrigPrice - *m.Price
-			} else {
-				m.Discount = m.OrigPrice
-			}
+			m.Discount = m.OrigPrice
 		}
+
 	}
-	return &cart
+	return &cart, nil
 }
 
-func GetItemFromDB(itemID string) *Item {
+func GetItemFromDB(itemID string) (*Item, error) {
 	var item Item
 	ctx := context.Background()
 	err := db.NewSelect().
@@ -268,38 +251,38 @@ func GetItemFromDB(itemID string) *Item {
 		Where("id = ?", itemID).
 		Scan(ctx)
 	if err != nil && err.Error() == "sql: no rows in result set" {
-		return nil
+		return nil, nil
 	} else if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return &item
+	return &item, nil
 }
 
-func GetItemsFromDB(items []*Item) []*Item {
+func GetItemsFromDB(items []*Item) ([]*Item, error) {
 	ctx := context.Background()
 	if items == nil {
-		return []*Item{}
+		return []*Item{}, nil
 	}
 	err := db.NewSelect().Model(&items).WherePK().Scan(ctx)
 
 	if err != nil && err.Error() == "sql: no rows in result set" {
-		return nil
+		return nil, nil
 	} else if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return items
+	return items, nil
 }
 
-func GetPromosFromDB(items []*Promo) []*Promo {
+func GetPromosFromDB(items []*Promo) ([]*Promo, error) {
 	ctx := context.Background()
 	if items == nil {
-		return []*Promo{}
+		return []*Promo{}, nil
 	}
 	err := db.NewSelect().Model(&items).WherePK().Scan(ctx)
 	if err != nil && err.Error() == "sql: no rows in result set" {
-		return nil
+		return nil, nil
 	} else if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return items
+	return items, nil
 }
