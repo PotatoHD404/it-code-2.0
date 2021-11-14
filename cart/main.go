@@ -9,10 +9,19 @@ import (
 	"github.com/uptrace/bun/dialect/mysqldialect"
 	"log"
 	"net/http"
+	"os"
 )
 
 func newDB() *bun.DB {
-	dsn := "itcode2021:itcode2021@tcp(mysql:3306)/itcode"
+
+	dsn := os.Getenv("MYSQL_USER") +
+		":" +
+		os.Getenv("MYSQL_PASSWORD") +
+		"@tcp(" + os.Getenv("MYSQL_HOST") +
+		":" +
+		os.Getenv("MYSQL_PORT") +
+		")/" +
+		os.Getenv("MYSQL_DB")
 	sqldb, err := sql.Open("mysql", dsn)
 	if err != nil {
 		panic(err)
