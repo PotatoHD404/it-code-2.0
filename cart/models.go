@@ -20,17 +20,18 @@ type Item struct {
 
 type Promo struct {
 	bun.BaseModel  `bun:"promos"`
-	ID             uint32   `bun:"id,pk" json:"id"`
-	Promocode      string   `bun:"promocode" json:"promocode"`
-	Priority       uint32   `bun:"priority" json:"priority"`
-	Action         string   `bun:"action" json:"action"`
-	Discount       float    `bun:"discount" json:"discount"`
+	ID             uint32   `bun:"id,pk" json:"promo_id"`
+	Promocode      string   `bun:"promocode" json:"-"`
+	Priority       uint32   `bun:"priority" json:"-"`
+	Action         string   `bun:"action" json:"-"`
+	Discount       float    `bun:"discount" json:"-"`
 	Title          string   `bun:"title" json:"title"`
-	Scope          string   `bun:"scope" json:"scope"`
-	ConditionItems []*Item  `bun:"m2m:promo_condition_item,join:Promo=Item" json:"condition_items"`
-	SelectorItems  []*Item  `bun:"m2m:promo_item_selector,join:Promo=Item" json:"selector_items"`
-	GiftItems      []*Item  `bun:"m2m:promo_gift_items,join:Promo=Item" json:"gift_items"`
-	Exclusions     []*Promo `bun:"m2m:promo_exclusions,join:Promo=ExPromo" json:"exclusions"`
+	Scope          string   `bun:"scope" json:"-"`
+	MinOrderSum    float    `bun:"min_order_sum" json:"-"`
+	ConditionItems []*Item  `bun:"m2m:promo_condition_item,join:Promo=Item" json:"-"`
+	SelectorItems  []*Item  `bun:"m2m:promo_item_selector,join:Promo=Item" json:"-"`
+	GiftItems      []*Item  `bun:"m2m:promo_gift_items,join:Promo=Item" json:"-"`
+	Exclusions     []*Promo `bun:"m2m:promo_exclusions,join:Promo=ExPromo" json:"-"`
 	Applied        bool     `bun:"-" json:"-"`
 }
 
@@ -72,13 +73,14 @@ type PromoItemSelector struct {
 
 type Cart struct {
 	bun.BaseModel `bun:"orders"`
-	ID            uint32      `bun:"id,pk" json:"-"`
-	CartID        string      `bun:"cart_id" json:"-"`
-	Items         []*CartItem `bun:"rel:has-many,join:id=cart_id" json:"items"`
-	Promos        []*Promo    `bun:"m2m:cart_promos,join:Cart=Promo" json:"promos"`
-	Promocode     string      `bun:"promocode" json:"promocode"`
-	Sum           float       `bun:"cart_sum" json:"cart_sum"`
-	Discount      float       `bun:"cart_discount" json:"cart_discount"`
+	ID            uint32       `bun:"id,pk" json:"-"`
+	CartID        string       `bun:"cart_id" json:"-"`
+	Items         []*CartItem  `bun:"rel:has-many,join:id=cart_id" json:"items"`
+	Promos        []*CartPromo `bun:"rel:has-many,join:id=cart_id" json:"promos"`
+	Promocode     string       `bun:"promocode" json:"promocode"`
+	Sum           float        `bun:"cart_sum" json:"cart_sum"`
+	Discount      float        `bun:"cart_discount" json:"cart_discount"`
+	OrigPrice     float        `bun:"-" json:"-"`
 }
 
 type CartItem struct {
@@ -100,9 +102,9 @@ type CartItem struct {
 type CartPromo struct {
 	bun.BaseModel `bun:"cart_promos"`
 	ID            uint32 `bun:"id,pk" json:"-"`
-	Price         *float `bun:"price" json:"price"`
 	CartID        uint32 `bun:"cart_id" json:"-"`
-	Cart          *Cart  `bun:"rel:belongs-to,join:cart_id=id" json:"cart"`
-	PromoID       uint32 `bun:"promo_id" json:"-"`
-	Promo         *Promo `bun:"rel:belongs-to,join:promo_id=id" json:"item"`
+	Cart          *Cart  `bun:"rel:belongs-to,join:cart_id=id" json:"-"`
+	PromoID       uint32 `bun:"promo_id" json:"promo_id"`
+	Promo         *Promo `bun:"rel:belongs-to,join:promo_id=id" json:"-"`
+	Title         string `bun:"-" json:"title"`
 }

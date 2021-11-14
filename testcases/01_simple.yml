@@ -50,7 +50,7 @@
     promos:
       - promo_id: 1
     cart_sum: 450
-    discount: 50
+    cart_discount: 50
     promocode: "10percent"
 
 - title: Скидка 10% за заказ по промокоду 2 пеперони
@@ -68,7 +68,7 @@
     promos:
       - promo_id: 1
     cart_sum: 900
-    discount: 100
+    cart_discount: 100
     promocode: "10percent"
 
 - title: Скидка 1000 за заказ по промокоду
@@ -83,8 +83,38 @@
     promos:
       - promo_id: 3
     cart_sum: 0
-    discount: 500
+    cart_discount: 500
     promocode: discount1000
+
+- title: Скидка 100% за заказ по промокоду
+  intro:
+    items:
+      - item_id: 3
+    promocode: 100percent
+  test:
+    items:
+      - item_id: 3
+        price: 500
+    promos:
+      - promo_id: 10
+    cart_sum: 0
+    cart_discount: 500
+    promocode: 100percent
+
+- title: Скидка 200% за заказ по промокоду
+  intro:
+    items:
+      - item_id: 3
+    promocode: 200percent
+  test:
+    items:
+      - item_id: 3
+        price: 500
+    promos:
+      - promo_id: 11
+    cart_sum: 0
+    cart_discount: 500
+    promocode: 200percent
 
 - title: Подарок 1 пеперони за заказ с промокодом
   intro:
@@ -143,320 +173,144 @@
       - promo_id: 7
     cart_sum: 280
 
-
-
-
-
-
-
-- title: 1 товар
+- title: Скидка 10% за каждый 7UP x1
   intro:
     items:
-      - item_id: 3
-    promocode: ""
-  test:
-    items:
-      - item_id: 3
-        price: 500
-    cart_sum: 500
-- title: 2 разных товара
-  intro:
-    items:
-      - item_id: 3
       - item_id: 4
-    promocode: ""
+      - item_id: 46
   test:
     items:
-      - item_id: 3
-        price: 500
       - item_id: 4
         price: 550
-    cart_sum: 1050
-- title: 3 товара 2 из которых одинаковые
-  intro:
-    items:
-      - item_id: 3
-      - item_id: 4
-      - item_id: 4
-    promocode: ""
-  test:
-    items:
-      - item_id: 3
-        price: 500
-      - item_id: 4
-        price: 550
-      - item_id: 4
-        price: 550
-    cart_sum: 1600
-
-- title: Тест price_discount order
-  intro:
-    items:
-      - item_id: 3
-    promocode: discount1000
-  test:
-    items:
-      - item_id: 3
-        price: 500
+      - item_id: 46
+        price: 99
+        discount: 11
     promos:
-      - promo_id: 3
-    cart_sum: 0
-    discount: 500
-    promocode: discount1000
+      - promo_id: 8
+    cart_sum: 649
 
-- title: Тест percent_discount order
+- title: Скидка 10% за каждый 7UP x2
+  intro:
+    items:
+      - item_id: 4
+      - item_id: 46
+      - item_id: 46
+  test:
+    items:
+      - item_id: 4
+        price: 550
+      - item_id: 46
+        price: 99
+        discount: 11
+      - item_id: 46
+        price: 99
+        discount: 11
+    promos:
+      - promo_id: 8
+      - promo_id: 8
+    cart_sum: 748
+
+- title: Скидка 100% за клюквенный компот x1
+  intro:
+    items:
+      - item_id: 44
+  test:
+    items:
+      - item_id: 44
+        discount: 200
+    promos:
+      - promo_id: 9
+
+- title: Скидка 100% за клюквенный компот x2
+  intro:
+    items:
+      - item_id: 44
+      - item_id: 44
+  test:
+    items:
+      - item_id: 44
+        discount: 200
+      - item_id: 44
+        discount: 200
+    promos:
+      - promo_id: 9
+      - promo_id: 9
+
+- title: В подарок компот за гавайскую пиццу
+  intro:
+    items:
+      - item_id: 5
+  test:
+    items:
+      - item_id: 5
+        price: 530
+      - item_id: 45
+    promos:
+      - promo_id: 12
+    cart_sum: 530
+
+- title: В подарок компот за гавайскую пиццу x2
+  intro:
+    items:
+      - item_id: 5
+      - item_id: 5
+  test:
+    items:
+      - item_id: 5
+        price: 530
+      - item_id: 5
+        price: 530
+      - item_id: 45
+      - item_id: 45
+    promos:
+      - promo_id: 12
+      - promo_id: 12
+    cart_sum: 1060
+
+- title: Скидка 10% на пепперони за ветчину и грибы
   intro:
     items:
       - item_id: 1
-    promocode: "10percent"
+      - item_id: 6
   test:
     items:
       - item_id: 1
-        price: 500
+        price: 450
+        discount: 50
+      - item_id: 6
+        price: 550
     promos:
-      - promo_id: 1
-    cart_sum: 450
-    discount: 50
-    promocode: "10percent"
+      - promo_id: 13
+    cart_sum: 1000
 
-- title: Тест gift order
+- title: Скидка 10% на пепперони за ветчину и грибы нет пеперони
   intro:
     items:
-      - item_id: 3
-    promocode: ""
+      - item_id: 6
   test:
     items:
-      - item_id: 3
-        price: 500
-    cart_sum: 500
+      - item_id: 6
+        price: 550
+    promos:
+      - promo_id: 13
+    cart_sum: 550
 
-- title: Тест price_discount item
+- title: Скидка 10% на пепперони за ветчину и грибы нет пеперони x 3
   intro:
     items:
-      - item_id: 3
-    promocode: ""
+      - item_id: 6
+      - item_id: 6
+      - item_id: 6
   test:
     items:
-      - item_id: 3
-        price: 500
-    cart_sum: 500
-
-- title: Тест percent_discount item
-  intro:
-    items:
-      - item_id: 3
-    promocode: ""
-  test:
-    items:
-      - item_id: 3
-        price: 500
-    cart_sum: 500
-
-- title: Тест gift item
-  intro:
-    items:
-      - item_id: 3
-    promocode: ""
-  test:
-    items:
-      - item_id: 3
-        price: 500
-    cart_sum: 500
-
-- title: Тест gift none order
-  intro:
-    items:
-      - item_id: 3
-    promocode: ""
-  test:
-    items:
-      - item_id: 3
-        price: 500
-    cart_sum: 500
-
-- title: Тест gift none item
-  intro:
-    items:
-      - item_id: 3
-    promocode: ""
-  test:
-    items:
-      - item_id: 3
-        price: 500
-    cart_sum: 500
-
-- title: Тест no promocode
-  intro:
-    items:
-      - item_id: 3
-    promocode: ""
-  test:
-    items:
-      - item_id: 3
-        price: 500
-    cart_sum: 500
-
-- title: Тест gift multiple item
-  intro:
-    items:
-      - item_id: 3
-    promocode: ""
-  test:
-    items:
-      - item_id: 3
-        price: 500
-    cart_sum: 500
-
-- title: Тест gift single item multiple
-  intro:
-    items:
-      - item_id: 3
-    promocode: ""
-  test:
-    items:
-      - item_id: 3
-        price: 500
-    cart_sum: 500
-
-- title: Тест multiple gift single item
-  intro:
-    items:
-      - item_id: 3
-    promocode: ""
-  test:
-    items:
-      - item_id: 3
-        price: 500
-    cart_sum: 500
-
-- title: Тест multiple percent_discount single
-  intro:
-    items:
-      - item_id: 3
-    promocode: ""
-  test:
-    items:
-      - item_id: 3
-        price: 500
-    cart_sum: 500
-
-- title: Тест price_discount=0
-  intro:
-    items:
-      - item_id: 3
-    promocode: ""
-  test:
-    items:
-      - item_id: 3
-        price: 500
-    cart_sum: 500
-
-- title: Тест percent_discount=0
-  intro:
-    items:
-      - item_id: 3
-    promocode: ""
-  test:
-    items:
-      - item_id: 3
-        price: 500
-    cart_sum: 500
-
-- title: Тест price_discount > price
-  intro:
-    items:
-      - item_id: 3
-    promocode: ""
-  test:
-    items:
-      - item_id: 3
-        price: 500
-    cart_sum: 500
-
-- title: Тест percent_discount > 100
-  intro:
-    items:
-      - item_id: 3
-    promocode: ""
-  test:
-    items:
-      - item_id: 3
-        price: 500
-    cart_sum: 500
-
-- title: Тест percent_discount < 0
-  intro:
-    items:
-      - item_id: 3
-    promocode: ""
-  test:
-    items:
-      - item_id: 3
-        price: 500
-    cart_sum: 500
-
-- title: Тест price_discount < 0
-  intro:
-    items:
-      - item_id: 3
-    promocode: ""
-  test:
-    items:
-      - item_id: 3
-        price: 500
-    cart_sum: 500
-
-- title: Тест order 1
-  intro:
-    items:
-      - item_id: 3
-    promocode: ""
-  test:
-    items:
-      - item_id: 3
-        price: 500
-    cart_sum: 500
-
-- title: Тест order 2
-  intro:
-    items:
-      - item_id: 3
-    promocode: ""
-  test:
-    items:
-      - item_id: 3
-        price: 500
-    cart_sum: 500
-
-- title: Тест order 3
-  intro:
-    items:
-      - item_id: 3
-    promocode: ""
-  test:
-    items:
-      - item_id: 3
-        price: 500
-    cart_sum: 500
-
-- title: Тест complex promo
-  intro:
-    items:
-      - item_id: 3
-    promocode: ""
-  test:
-    items:
-      - item_id: 3
-        price: 500
-    cart_sum: 500
-
-- title: Тест 2 complex promos
-  intro:
-    items:
-      - item_id: 3
-    promocode: ""
-  test:
-    items:
-      - item_id: 3
-        price: 500
-    cart_sum: 500
+      - item_id: 6
+        price: 550
+      - item_id: 6
+        price: 550
+      - item_id: 6
+        price: 550
+    promos:
+      - promo_id: 13
+      - promo_id: 13
+      - promo_id: 13
+    cart_sum: 1650

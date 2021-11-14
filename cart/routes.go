@@ -25,7 +25,7 @@ func TestFunc(w http.ResponseWriter, _ *http.Request) {
 }
 
 func AddItemToCart(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+	//w.Header().Set("Content-Type", "application/json")
 
 	var item = GetItemFromDB(r.FormValue("item_id"))
 	var cart = GetCartFromDB(mux.Vars(r)["cart_id"])
@@ -46,18 +46,31 @@ func AddItemToCart(w http.ResponseWriter, r *http.Request) {
 		Model(cardItem).
 		Exec(ctx)
 	if err != nil {
-		w.WriteHeader(http.StatusCreated)
 		http.Error(w, err.Error(), 422)
+		return
 		//panic(err)
 	}
 	cart.ResetCart()
+	if len(cart.Promos) > 0 {
+		_, err := db.NewDelete().Model(&cart.Promos).WherePK().Exec(ctx)
+		if err != nil {
+			http.Error(w, err.Error(), 422)
+			panic(err)
+		}
+	}
 	cart.ApplyPromocode(w)
+	if len(cart.Promos) > 0 {
+		_, err := db.NewInsert().Model(&cart.Promos).Exec(ctx)
+		if err != nil {
+			http.Error(w, err.Error(), 422)
+			panic(err)
+		}
+	}
 	_, err = db.NewUpdate().Model(cart).WherePK().Exec(ctx)
 
 	if err != nil {
-		w.WriteHeader(http.StatusCreated)
 		http.Error(w, err.Error(), 422)
-		//panic(err)
+		return
 	}
 	//values := db.NewValues(&cart.Items)
 	//_, err = db.NewUpdate().
@@ -68,9 +81,7 @@ func AddItemToCart(w http.ResponseWriter, r *http.Request) {
 	//	Exec(ctx)
 	_, err = db.NewUpdate().Model(&cart.Items).Column("price", "orig_price", "cart_item_id").Bulk().Exec(ctx)
 	if err != nil {
-		//w.WriteHeader(http.StatusCreated)
 		http.Error(w, err.Error(), 422)
-		//panic(err)
 	} else {
 		w.WriteHeader(http.StatusCreated)
 		if err != nil {
@@ -85,8 +96,21 @@ func ApplyPromoToCart(w http.ResponseWriter, r *http.Request) {
 
 	cart.Promocode = r.FormValue("promocode")
 	cart.ResetCart()
+	if len(cart.Promos) > 0 {
+		_, err := db.NewDelete().Model(&cart.Promos).WherePK().Exec(ctx)
+		if err != nil {
+			http.Error(w, err.Error(), 422)
+			panic(err)
+		}
+	}
 	cart.ApplyPromocode(w)
-
+	if len(cart.Promos) > 0 {
+		_, err := db.NewInsert().Model(&cart.Promos).Exec(ctx)
+		if err != nil {
+			http.Error(w, err.Error(), 422)
+			panic(err)
+		}
+	}
 	_, err := db.NewUpdate().Model(cart).WherePK().Exec(ctx)
 
 	if err != nil {
@@ -98,10 +122,10 @@ func ApplyPromoToCart(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	err = json.NewEncoder(w).Encode(cart)
-	if err != nil {
-		panic(err)
-	}
+	//err = json.NewEncoder(w).Encode(cart)
+	//if err != nil {
+	//	panic(err)
+	//}
 
 }
 
